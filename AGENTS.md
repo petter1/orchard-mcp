@@ -2,6 +2,8 @@
 
 This file provides repository guidance for coding agents working in this repository.
 
+**Fork petter1/orchard-mcp:** Plan, Entscheide und nächste Schritte des Forks stehen in [ROADMAP.md](ROADMAP.md). Vor der Arbeit lesen.
+
 ## Project Overview
 
 orchard-mcp is an MCP (Model Context Protocol) server that exposes macOS system services and apps (Calendar, Mail, Reminders, Files, Numbers, Pages, Keynote, Notes, Contacts) to MCP clients. It uses a two-layer architecture: a TypeScript MCP server communicates over stdio JSON-RPC, and delegates to a native Swift CLI binary (`apple-bridge`) that talks to macOS frameworks (EventKit, Contacts, PDFKit, Vision, etc.) and apps via AppleScript/JXA.
