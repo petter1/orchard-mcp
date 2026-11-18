@@ -16,12 +16,14 @@ Orchard im Fork verbessern, lokal nutzen und gute Änderungen als PR an `upstrea
 | Datum | Entscheid |
 |---|---|
 | 13.11.2026 | Fork unter `petter1`. Gute Änderungen gehen als PR upstream. |
+| 18.11.2026 | Upstream-PRs und Diskussionen im Upstream-Repo macht nur Yanik, nie Claude (kein Overhead in upstream). |
 | 18.11.2026 | Die Linux-Lösung kommt in diesen Fork, nicht in ein eigenes Repo. |
 | 18.11.2026 | **icloud-mcp wird auf Linux als Backend eingebunden.** Orchard reicht dort Kalender-, Kontakt- und Mail-Aufrufe an einen icloud-mcp-Prozess weiter. icloud-mcp bleibt ein eigenes Projekt (Go) und bleibt nah am Upstream. Verworfen: den Go-Code nach TypeScript übernehmen, denn dann fielen die Upstream-Updates und Sicherheitsfixes weg. |
 
 ## Arbeitsregeln für Sessions
 
 - Swift-Bridge bauen und testen geht nur auf macOS (`npm run build`, `npm test`). Auf Linux oder in einer Cloud-Session nur TypeScript bearbeiten, `npm run build:ts`, `npm run lint` und die TS-Tests, die ohne Bridge laufen.
+- **Keine Interaktion mit upstream (Entscheid Yanik 18.11.2026):** Claude öffnet keine PRs, Issues oder Kommentare im Upstream-Repo und beteiligt sich nicht an Diskussionen dort. Upstream-PRs macht Yanik selbst. Claude bereitet höchstens Branches im Fork vor (von `upstream/main` abgezweigt, ohne ROADMAP).
 - Eine Änderung pro Branch. PRs für upstream auf Englisch und vom aktuellen `upstream/main` abzweigen. Diese `ROADMAP.md` nicht in Upstream-PRs mitnehmen.
 - Nach jedem erledigten Schritt hier den Status nachführen (✅ + Datum).
 
@@ -36,7 +38,7 @@ Orchard im Fork verbessern, lokal nutzen und gute Änderungen als PR an `upstrea
 | 5 | Kalender nur lesend | `calendar_create_event` / `_update_event` / `_delete_event` (EventKit), bei Serien `span: thisEvent` | 3 |
 | 6 | Reminders nicht bearbeitbar (Datum, Notiz, Liste); AppleScript läuft bei grossen Listen (~600 Einträge) in Timeouts | `reminders_update_reminder` (EventKit) | 3 |
 | 7 | Keine Flags/Gelesen-Status | `mail_set_flag`, `mail_mark_read` | 2 |
-| 8 | **Bug:** Kontakte lassen sich nie freigeben, weil `swift/Sources/AppleBridge/Info.plist` `NSContactsUsageDescription` fehlt. macOS lehnt dann ohne Dialog ab. | Key ergänzt ✅ 18.11. (Branch `fix/contacts-usage-description`, von `upstream/main`). Offen: auf dem Mac bauen und testen, dann PR upstream. | 1 |
+| 8 | **Bug:** Kontakte lassen sich nie freigeben, weil `swift/Sources/AppleBridge/Info.plist` `NSContactsUsageDescription` fehlt. macOS lehnt dann ohne Dialog ab. | Key ergänzt ✅ 18.11. (Branch `fix/contacts-usage-description`, von `upstream/main`). Offen: auf dem Mac bauen und testen. PR upstream macht Yanik selbst. | 1 |
 | 9 | Berechtigungsdialoge landen unbemerkt im Mitteilungszentrum und gelten dann als abgelehnt | Setup-Hinweis: Dialog sofort bestätigen, sonst `tccutil reset <Dienst> io.l22.apple-bridge` | 4 |
 | 10 | **Bug:** `system_doctor` meldet Kalender/Reminders/Kontakte als «denied», obwohl die Tools funktionieren | Doctor wie die übrigen Befehle über `AppleBridge.app` ausführen | 1 |
 | 11 | **Bug:** `calendar_list_events` liefert bei Tagesfenstern falsche Tage (Abfrage für den 18.11. lieferte Einträge vom 17.11.) | Zeitzonen-/Bereichslogik prüfen, Test mit Tagesfenster in `Europe/Zurich` | 3 |
