@@ -36,7 +36,7 @@ Orchard im Fork verbessern, lokal nutzen und gute Änderungen als PR an `upstrea
 | 5 | Kalender nur lesend | `calendar_create_event` / `_update_event` / `_delete_event` (EventKit), bei Serien `span: thisEvent` | 3 |
 | 6 | Reminders nicht bearbeitbar (Datum, Notiz, Liste); AppleScript läuft bei grossen Listen (~600 Einträge) in Timeouts | `reminders_update_reminder` (EventKit) | 3 |
 | 7 | Keine Flags/Gelesen-Status | `mail_set_flag`, `mail_mark_read` | 2 |
-| 8 | **Bug:** Kontakte lassen sich nie freigeben, weil `swift/Sources/AppleBridge/Info.plist` `NSContactsUsageDescription` fehlt. macOS lehnt dann ohne Dialog ab. | Key ergänzen, Issue/PR upstream. (Lokal auf dem Mac gepatcht, geht bei `npm update` verloren.) | 1 |
+| 8 | **Bug:** Kontakte lassen sich nie freigeben, weil `swift/Sources/AppleBridge/Info.plist` `NSContactsUsageDescription` fehlt. macOS lehnt dann ohne Dialog ab. | Key ergänzt ✅ 18.11. (Branch `fix/contacts-usage-description`, von `upstream/main`). Offen: auf dem Mac bauen und testen, dann PR upstream. | 1 |
 | 9 | Berechtigungsdialoge landen unbemerkt im Mitteilungszentrum und gelten dann als abgelehnt | Setup-Hinweis: Dialog sofort bestätigen, sonst `tccutil reset <Dienst> io.l22.apple-bridge` | 4 |
 | 10 | **Bug:** `system_doctor` meldet Kalender/Reminders/Kontakte als «denied», obwohl die Tools funktionieren | Doctor wie die übrigen Befehle über `AppleBridge.app` ausführen | 1 |
 | 11 | **Bug:** `calendar_list_events` liefert bei Tagesfenstern falsche Tage (Abfrage für den 18.11. lieferte Einträge vom 17.11.) | Zeitzonen-/Bereichslogik prüfen, Test mit Tagesfenster in `Europe/Zurich` | 3 |
@@ -54,6 +54,10 @@ Orchard im Fork verbessern, lokal nutzen und gute Änderungen als PR an `upstrea
 | 5 Linux | siehe unten | noch nicht eingeplant, frühestens 2027 |
 
 Hinweis: Phase 1 muss vor den anderen laufen. Fällt sie später, verschieben sich die übrigen.
+
+Stand 18.11.2026 (Cloud-Session): #8 im Code behoben, noch nicht auf dem Mac getestet. Prüfen am Mac (So 29.11.): `npm run build`, dann `contacts_search` aufrufen; erscheint kein Dialog, `tccutil reset AddressBook io.l22.apple-bridge` und erneut versuchen. Ebenfalls prüfen: Ab macOS 14 erwartet `requestFullAccessToEvents`/`…Reminders` laut Apple die Keys `NSCalendarsFullAccessUsageDescription` und `NSRemindersFullAccessUsageDescription`. Die plist hat nur die alten Keys. Kalender und Reminders laufen bei Yanik trotzdem, also nur beobachten und bei Bedarf ergänzen.
+
+Auf Seiten icloud-mcp gibt es seit 18.11. die Gegenstücke für Phase 2a/5: `create_mailbox` und `move_messages` (Batch mit neuen UIDs). Die Tabelle in Phase 5 entsprechend lesen: `mail_create_mailbox` → `create_mailbox`, `mail_move` (Batch) → `move_messages`.
 
 ## Phase 5: Linux mit icloud-mcp als Backend
 
@@ -78,9 +82,9 @@ Plan:
    | `mail_list_accounts` | `icloud_capabilities` / Konfiguration (nur iCloud-Konto) |
    | `mail_search`, `mail_unread_summary`, `mail_flagged` | `search_messages` (mit Filtern) |
    | `mail_read_message` | `get_message` |
-   | `mail_move` (Phase 2) | `move_message` |
+   | `mail_move` (Phase 2) | `move_message` (einzeln), `move_messages` (Batch, seit 18.11. im Fork) |
    | `mail_set_flag`, `mail_mark_read` (Phase 2) | `set_message_flags` |
-   | `mail_create_mailbox` (Phase 2) | fehlt noch, kommt im icloud-mcp-Fork |
+   | `mail_create_mailbox` (Phase 2) | `create_mailbox` (seit 18.11. im icloud-mcp-Fork) |
    | `mail_create_draft`, `mail_save_attachment` | fehlt bzw. anders (`send_message` sendet direkt, nicht als Entwurf) |
 
 4. **Sicherheit:** Die App-Safety-Grenzen aus `src/safety.ts` (Zeit, Ausgabegrösse, breite Anfragen ablehnen) gelten auch für den Linux-Pfad. icloud-mcp standardmässig nur lesend starten (`ICLOUD_MCP_READ_ONLY=true`). Schreibrechte nur gezielt freigeben.
