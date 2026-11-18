@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- **Contacts access could never be granted.** `swift/Sources/AppleBridge/Info.plist` declared usage descriptions for Calendars and Reminders but not for Contacts. Without `NSContactsUsageDescription`, macOS denies `CNContactStore.requestAccess(for: .contacts)` without showing a prompt, so every `contacts_*` tool failed with access denied. The key is now present in the plist that is embedded into `apple-bridge` and copied into `AppleBridge.app`. Existing installs need a rebuild (`npm run build` or reinstall); if Contacts was already denied, reset it with `tccutil reset AddressBook io.l22.apple-bridge`.
+
 ## [0.6.3] - 2026-05-27
 
 ### Fixed
