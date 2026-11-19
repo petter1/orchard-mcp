@@ -128,6 +128,8 @@ Tool names use underscores for Claude Desktop Chat compatibility.
 - `calendar_today` - Today's events across all calendars
 - `calendar_search` - Search events by title, notes, or location
 
+Calendar windows use the host's local timezone: `2026-02-17` means local midnight, times without an offset are local, and `end` is exclusive (passing the same date as `start` and `end` returns that whole day). Events that only touch the window edge are dropped, and every event carries `startLocal`/`endLocal` next to the UTC `start`/`end`. Pass `compact: true` for a short list (id, title, local times, all-day flag, calendar, location, recurrence) without notes, attendees and URLs.
+
 ### Mail
 
 - `mail_list_accounts` - List mail accounts with a bounded mailbox-name sample; use `mail_unread_summary` for unread counts
