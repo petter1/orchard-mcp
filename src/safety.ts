@@ -1,5 +1,7 @@
 import { bridgeData, type BridgeOptions } from "./bridge.js";
 
+export type { BridgeResponse } from "./bridge.js";
+
 export interface OperationProfile {
   name: string;
   lane: string;
@@ -129,11 +131,13 @@ export const OPERATION_PROFILES = {
 
 export async function safeBridgeData(
   args: string[],
-  profile: OperationProfile
+  profile: OperationProfile,
+  extra: Pick<BridgeOptions, "retryViaApp"> = {}
 ): Promise<unknown> {
   const options: BridgeOptions = {
     timeoutMs: profile.timeoutMs,
     maxOutputBytes: profile.maxOutputBytes,
+    ...extra,
   };
   return runWithOperationProfile(
     {
