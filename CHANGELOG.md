@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Documentation
+- README: what to do when a macOS permission prompt was missed (`tccutil reset … io.l22.apple-bridge`).
+
 ## [0.6.3] - 2026-05-27
 
 ### Fixed
