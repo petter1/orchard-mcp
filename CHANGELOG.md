@@ -11,6 +11,9 @@
 - Calendar events carry `startLocal`/`endLocal` (ISO 8601 with the host offset).
 - `compact` option for `calendar_list_events`, `calendar_today` and `calendar_search`: returns id, title, local times, all-day flag, calendar, location and recurrence only, without indentation. A three-week overview no longer floods the client context.
 
+### Documentation
+- README: what to do when a macOS permission prompt was missed (`tccutil reset … io.l22.apple-bridge`).
+
 ## [0.6.3] - 2026-05-27
 
 ### Fixed

@@ -74,6 +74,25 @@ SHA-256 against the manifest published inside the tarball.
 The setup wizard verifies prerequisites, triggers macOS permission prompts, and generates
 MCP client configuration.
 
+### Permission prompts
+
+Answer each macOS permission prompt right away. If a prompt is missed, macOS may move it
+to Notification Center, and a prompt that is never answered counts as denied. The tools
+then fail with "access denied" and macOS does not ask again.
+
+To get the prompt back, reset the permission for the AppleBridge app and run
+`orchard-mcp setup` (or the tool) again:
+
+```bash
+tccutil reset Calendar io.l22.apple-bridge
+tccutil reset Reminders io.l22.apple-bridge
+tccutil reset AddressBook io.l22.apple-bridge   # Contacts
+```
+
+Mail, Notes and the iWork apps use Automation permissions instead. Reset those with
+`tccutil reset AppleEvents io.l22.apple-bridge`, or toggle them in
+System Settings > Privacy & Security > Automation.
+
 ### From Source
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for building from source.
