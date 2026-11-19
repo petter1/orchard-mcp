@@ -70,6 +70,14 @@ export interface BridgeOptions {
    * or flood the MCP client.
    */
   maxOutputBytes?: number;
+  /**
+   * Retry through the AppleBridge.app bundle when this returns true for a
+   * successful direct response. Used by `doctor`, whose direct run reports
+   * TCC status for the bare CLI binary, which can differ from the .app bundle
+   * that actually holds the grants. If the .app run fails, the direct
+   * response is returned instead.
+   */
+  retryViaApp?: (response: BridgeResponse) => boolean;
 }
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -111,6 +119,10 @@ export async function callBridge(
       parsed.error.includes("access denied")
     ) {
       return callBridgeViaApp(args, timeoutMs, maxOutputBytes);
+    }
+    if (parsed.status === "ok" && opts.retryViaApp?.(parsed)) {
+      const viaApp = await callBridgeViaApp(args, timeoutMs, maxOutputBytes);
+      return viaApp.status === "ok" ? viaApp : parsed;
     }
     return parsed;
   }

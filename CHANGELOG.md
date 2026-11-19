@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- **`system_doctor` reported Calendar, Reminders or Contacts as `denied` while the matching tools worked.** The other tools fall back to `AppleBridge.app` (which holds the TCC grants) when the bare CLI binary is denied, but `doctor` always succeeds and only reports `granted: false`, so it never took that path. `system_doctor` now re-runs through `AppleBridge.app` when the direct report shows any of these services as not granted, and keeps the direct report if the `.app` run fails. New `retryViaApp` option on `BridgeOptions` / `safeBridgeData` for this.
+
 ## [0.6.3] - 2026-05-27
 
 ### Fixed
