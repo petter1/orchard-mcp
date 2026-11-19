@@ -1,9 +1,25 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import {
+  calendarJson,
+  normalizeCalendarWindow,
+  shapeCalendarEvents,
+  todayWindow,
+} from "../calendarTime.js";
 import { assertIsoDateRangeWithinDays } from "../resourceGuards.js";
 import { OPERATION_PROFILES, safeBridgeData } from "../safety.js";
 
 const MAX_CALENDAR_RANGE_DAYS = 31;
+
+const WINDOW_NOTE =
+  "Date-only values mean local midnight and end is exclusive (one day: start=2026-02-17, end=2026-02-18; the same date twice also means that whole day). Times without an offset are local. Events include startLocal/endLocal in the host timezone.";
+
+const compactSchema = z
+  .boolean()
+  .optional()
+  .describe(
+    "Return a compact list (id, title, startLocal, endLocal, isAllDay, calendar, location, isRecurring) without notes, attendees, URLs or UTC fields. Use for multi-day overviews."
+  );
 
 export function registerCalendarTools(server: McpServer): void {
   server.tool(
@@ -20,7 +36,7 @@ export function registerCalendarTools(server: McpServer): void {
 
   server.tool(
     "calendar.list_events",
-    "List calendar events in a date range. Recurring events are properly expanded. Optionally filter by calendar ID.",
+    `List calendar events in a date range. Recurring events are properly expanded. Optionally filter by calendar ID. ${WINDOW_NOTE}`,
     {
       start: z
         .string()
@@ -32,67 +48,61 @@ export function registerCalendarTools(server: McpServer): void {
         .string()
         .optional()
         .describe("Optional calendar ID to filter by (from calendar.list_calendars)"),
+      compact: compactSchema,
     },
-    async ({ start, end, calendarId }) => {
+    async ({ start, end, calendarId, compact }) => {
+      const window = normalizeCalendarWindow(start, end);
       assertIsoDateRangeWithinDays(
-        start,
-        end,
+        window.start,
+        window.end,
         MAX_CALENDAR_RANGE_DAYS,
         "calendar.list_events"
       );
-      const args = ["events", "--start", start, "--end", end];
+      const args = ["events", "--start", window.start, "--end", window.end];
       if (calendarId) {
         args.push("--calendar", calendarId);
       }
       const data = await safeBridgeData(args, OPERATION_PROFILES.calendarRead);
+      const events = shapeCalendarEvents(data, window, { compact });
       return {
-        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+        content: [{ type: "text", text: calendarJson(events, compact) }],
       };
     }
   );
 
   server.tool(
     "calendar.today",
-    "Get all calendar events for today across all calendars.",
-    {},
-    async () => {
-      // Reason: Build today's date range in local timezone for the bridge.
-      const now = new Date();
-      const startOfDay = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate()
-      );
-      const endOfDay = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate() + 1
-      );
-      const start = startOfDay.toISOString();
-      const end = endOfDay.toISOString();
-
+    "Get all calendar events for today (local timezone) across all calendars. Events include startLocal/endLocal.",
+    {
+      compact: compactSchema,
+    },
+    async ({ compact }) => {
+      const window = todayWindow();
       const data = await safeBridgeData(
-        ["events", "--start", start, "--end", end],
+        ["events", "--start", window.start, "--end", window.end],
         OPERATION_PROFILES.calendarRead
       );
+      const events = shapeCalendarEvents(data, window, { compact });
       return {
-        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+        content: [{ type: "text", text: calendarJson(events, compact) }],
       };
     }
   );
 
   server.tool(
     "calendar.search",
-    "Search calendar events by title, notes, or location within a date range.",
+    `Search calendar events by title, notes, or location within a date range. ${WINDOW_NOTE}`,
     {
       query: z.string().describe("Search term to match against event title, notes, or location"),
       start: z.string().describe("Start date in ISO 8601 format"),
       end: z.string().describe("End date in ISO 8601 format"),
+      compact: compactSchema,
     },
-    async ({ query, start, end }) => {
+    async ({ query, start, end, compact }) => {
+      const window = normalizeCalendarWindow(start, end);
       assertIsoDateRangeWithinDays(
-        start,
-        end,
+        window.start,
+        window.end,
         MAX_CALENDAR_RANGE_DAYS,
         "calendar.search"
       );
@@ -100,12 +110,13 @@ export function registerCalendarTools(server: McpServer): void {
         "search",
         query,
         "--start",
-        start,
+        window.start,
         "--end",
-        end,
+        window.end,
       ], OPERATION_PROFILES.calendarRead);
+      const events = shapeCalendarEvents(data, window, { compact });
       return {
-        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+        content: [{ type: "text", text: calendarJson(events, compact) }],
       };
     }
   );

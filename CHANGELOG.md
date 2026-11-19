@@ -4,6 +4,11 @@
 
 ### Fixed
 - **Contacts access could never be granted.** `swift/Sources/AppleBridge/Info.plist` declared usage descriptions for Calendars and Reminders but not for Contacts. Without `NSContactsUsageDescription`, macOS denies `CNContactStore.requestAccess(for: .contacts)` without showing a prompt, so every `contacts_*` tool failed with access denied. The key is now present in the plist that is embedded into `apple-bridge` and copied into `AppleBridge.app`. Existing installs need a rebuild (`npm run build` or reinstall); if Contacts was already denied, reset it with `tccutil reset AddressBook io.l22.apple-bridge`.
+- **Calendar day windows were shifted by the UTC offset.** `apple-bridge` parsed date-only bounds such as `2026-11-18` as UTC midnight and returned UTC times, so a one-day query in a non-UTC timezone started at the wrong local hour and could return events from the neighbouring day. `calendar_list_events`, `calendar_search` and `calendar_today` now normalize bounds in TypeScript to absolute instants in the host timezone (date-only = local midnight, no offset = local time), treat the same date as `start` and `end` as that whole day, and drop events that only touch the window edges.
+
+### Added
+- Calendar events carry `startLocal`/`endLocal` (ISO 8601 with the host offset).
+- `compact` option for `calendar_list_events`, `calendar_today` and `calendar_search`: returns id, title, local times, all-day flag, calendar, location and recurrence only, without indentation. A three-week overview no longer floods the client context.
 
 ## [0.6.3] - 2026-05-27
 
