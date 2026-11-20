@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   appendMailLocatorArgs,
+  MAIL_BATCH_MAX_IDS,
   requireMailLocator,
 } from "../src/mailSafety.js";
 
@@ -65,5 +66,18 @@ describe("mail locator safety", () => {
     assert.match(body, /set mailboxLimit to 50/);
     assert.doesNotMatch(body, /on listMailboxes/);
     assert.doesNotMatch(body, /unread count of mbox/);
+  });
+});
+
+describe("mail status bridge contract", () => {
+  it("keeps the batch bounded", () => {
+    assert.equal(MAIL_BATCH_MAX_IDS, 25);
+  });
+
+  it("looks messages up only in the given mailbox", () => {
+    const body = swiftFunctionBody("setStatus");
+    assert.match(body, /whose message id is theId/);
+    assert.doesNotMatch(body, /every mailbox/);
+    assert.match(body, /ERROR_SOURCE_NOT_FOUND/);
   });
 });

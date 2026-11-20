@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **`mail_set_flag`** and **`mail_mark_read`**: set flagged or read status on 1–25 messages in one mailbox (account and mailbox required). Results list `updated`, `notFound`, and `failed` IDs. Both use the new `mail-set-status` bridge command and `mailStatus` safety profile (60 s, mail lane).
+
 ## [0.6.3] - 2026-05-27
 
 ### Fixed

@@ -83,6 +83,15 @@ export const OPERATION_PROFILES = {
     queueTimeoutMs: 500,
     maxOutputBytes: DEFAULT_OUTPUT_BYTES,
   },
+  mailStatus: {
+    // Reason: one whose-lookup per message in a single mailbox; a batch of
+    // MAIL_BATCH_MAX_IDS needs more than a single write but stays bounded.
+    name: "mail.status",
+    lane: "mail",
+    timeoutMs: 60_000,
+    queueTimeoutMs: 500,
+    maxOutputBytes: DEFAULT_OUTPUT_BYTES,
+  },
   notes: {
     name: "notes.apple-events",
     lane: "notes",
