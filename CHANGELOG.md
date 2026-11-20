@@ -4,6 +4,7 @@
 
 ### Fixed
 - **`system_doctor` reported Calendar/Contacts as denied although the tools worked.** macOS attaches TCC grants to the `AppleBridge.app` identity, but the doctor ran the bare binary and returned success, so the "access denied" fallback to the app bundle never triggered. The doctor now runs through the app bundle (new `preferApp` bridge option, set on the `systemDoctor` safety profile; skipped when `APPLE_BRIDGE_BIN` is overridden without `APPLE_BRIDGE_APP`). `orchard-mcp setup` uses the same path for its permission checks and validation.
+- **Contacts access could never be granted.** `Info.plist` lacked `NSContactsUsageDescription`, so macOS denied Contacts without showing a dialog and all `contacts_*` tools failed. A metadata test now checks the usage description for every TCC-gated framework. Existing installs may need `tccutil reset AddressBook io.l22.apple-bridge` once before the dialog appears.
 
 ## [0.6.3] - 2026-05-27
 
