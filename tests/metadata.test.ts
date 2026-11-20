@@ -57,6 +57,17 @@ describe("metadata stays in sync", () => {
     }
   });
 
+  it("bounds every TCC permission request with PermissionGate", () => {
+    // Reason: an unanswered dialog must not hang tools or the doctor (#13).
+    for (const source of ["Calendar.swift", "Reminders.swift", "Contacts.swift"]) {
+      const code = readRepoFile(`swift/Sources/AppleBridge/${source}`);
+      assert.match(code, /PermissionGate\.request/, source);
+      assert.doesNotMatch(code, /try await store\.requestFullAccessTo/, source);
+    }
+    const doctor = readRepoFile("swift/Sources/AppleBridge/Doctor.swift");
+    assert.doesNotMatch(doctor, /store\.requestFullAccessTo|requestAccess\(\)/);
+  });
+
   it("does not keep stale package snapshots in the repo", () => {
     assert.equal(
       existsSync(new URL("package/package.json", repoRoot)),

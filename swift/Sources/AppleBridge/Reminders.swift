@@ -6,10 +6,13 @@ enum RemindersBridge {
     private static let maxReminderResults = 200
 
     static func requestAccess() async -> Bool {
-        do {
-            return try await store.requestFullAccessToReminders()
-        } catch {
-            return false
+        PermissionGate.requireAnswer(service: "Reminders", await requestAccessAnswer())
+    }
+
+    /// The permission answer, or nil while the dialog is unanswered.
+    static func requestAccessAnswer() async -> Bool? {
+        await PermissionGate.request { done in
+            store.requestFullAccessToReminders { granted, _ in done(granted) }
         }
     }
 

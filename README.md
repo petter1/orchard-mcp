@@ -75,6 +75,16 @@ SHA-256 against the manifest published inside the tarball.
 The setup wizard verifies prerequisites, triggers macOS permission prompts, and generates
 MCP client configuration.
 
+### Permission dialogs
+
+Answer the macOS permission dialogs for `apple-bridge` right away. A dialog that is not
+answered (for example one that slid into Notification Center) keeps the permission
+undecided: Calendar, Reminders, and Contacts tools then fail after about 8 seconds with
+"permission dialog is waiting", and `system_doctor` reports `status: "pending"`. Every
+rebuild re-signs `AppleBridge.app` ad hoc, so macOS may ask again after an update or a
+source build. If no dialog appears, reset the decision and retry, e.g.
+`tccutil reset Calendar io.l22.apple-bridge` (`Reminders`, `AddressBook` for Contacts).
+
 ### From Source
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for building from source.
