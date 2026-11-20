@@ -211,17 +211,8 @@ enum RemindersBridge {
         }
 
         if let dueDateStr = dueDate {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime]
-            var parsed: Date? = formatter.date(from: dueDateStr)
-            if parsed == nil {
-                let df = DateFormatter()
-                df.dateFormat = "yyyy-MM-dd"
-                df.timeZone = TimeZone.current
-                parsed = df.date(from: dueDateStr)
-            }
-            guard let due = parsed else {
-                JSONOutput.error("Invalid date format: \(dueDateStr). Use ISO 8601 (e.g. 2026-02-18T10:00:00Z or 2026-02-18).")
+            guard let due = try? DateParsing.parseISO(dueDateStr) else {
+                JSONOutput.error("\(DateParseError(input: dueDateStr))")
                 return
             }
             reminder.dueDateComponents = Calendar.current.dateComponents(
