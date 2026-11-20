@@ -38,6 +38,9 @@ struct AppleBridge: AsyncParsableCommand {
             Calendars.self,
             Events.self,
             Search.self,
+            EventCreate.self,
+            EventUpdate.self,
+            EventDelete.self,
             MailAccounts.self,
             MailUnread.self,
             MailSearchCmd.self,
@@ -155,6 +158,93 @@ struct Search: AsyncParsableCommand {
 
     func run() async throws {
         await CalendarBridge.searchEvents(query: query, startISO: start, endISO: end)
+    }
+}
+
+struct EventFieldOptions: ParsableArguments {
+    @Option(name: .long, help: "Event title")
+    var title: String?
+
+    @Option(name: .long, help: "Start (ISO 8601; date only for all-day events)")
+    var start: String?
+
+    @Option(name: .long, help: "End (ISO 8601; for all-day events the last day, inclusive)")
+    var end: String?
+
+    @Option(name: .long, help: "All-day event (true/false)")
+    var allDay: Bool?
+
+    @Option(name: .long, help: "Location (empty string clears it)")
+    var location: String?
+
+    @Option(name: .long, help: "Notes (empty string clears them)")
+    var notes: String?
+
+    @Option(name: .long, help: "URL (empty string clears it)")
+    var url: String?
+
+    var fields: CalendarBridge.EventFields {
+        CalendarBridge.EventFields(title: title, start: start, end: end, allDay: allDay, location: location, notes: notes, url: url)
+    }
+}
+
+extension CalendarBridge.Span: ExpressibleByArgument {}
+
+struct EventCreate: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "event-create",
+        abstract: "Create a calendar event."
+    )
+
+    @Option(name: .long, help: "Calendar ID (default: the default calendar for new events)")
+    var calendar: String?
+
+    @OptionGroup var options: EventFieldOptions
+
+    func run() async throws {
+        await CalendarBridge.createEvent(calendarID: calendar, fields: options.fields)
+    }
+}
+
+struct EventUpdate: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "event-update",
+        abstract: "Update a calendar event or one occurrence of a series."
+    )
+
+    @Option(name: .long, help: "Event ID (from events)")
+    var id: String
+
+    @Option(name: .long, help: "Start of the occurrence to change (recurring events)")
+    var occurrenceStart: String?
+
+    @Option(name: .long, help: "thisEvent (default) or futureEvents")
+    var span: CalendarBridge.Span = .thisEvent
+
+    @OptionGroup var options: EventFieldOptions
+
+    func run() async throws {
+        await CalendarBridge.updateEvent(id: id, occurrenceISO: occurrenceStart, span: span, fields: options.fields)
+    }
+}
+
+struct EventDelete: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "event-delete",
+        abstract: "Delete a calendar event or one occurrence of a series."
+    )
+
+    @Option(name: .long, help: "Event ID (from events)")
+    var id: String
+
+    @Option(name: .long, help: "Start of the occurrence to delete (recurring events)")
+    var occurrenceStart: String?
+
+    @Option(name: .long, help: "thisEvent (default) or futureEvents")
+    var span: CalendarBridge.Span = .thisEvent
+
+    func run() async throws {
+        await CalendarBridge.deleteEvent(id: id, occurrenceISO: occurrenceStart, span: span)
     }
 }
 
