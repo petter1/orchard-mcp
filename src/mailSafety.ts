@@ -21,8 +21,8 @@ export function requireMailLocator(toolName: string, locator: MailLocator): void
   }
 }
 
-/** Upper bound for one mail.move call; larger batches go in several calls. */
-export const MAIL_MOVE_MAX_IDS = 25;
+/** Upper bound for message IDs in one batch call; larger batches go in several calls. */
+export const MAIL_BATCH_MAX_IDS = 25;
 
 /**
  * Validate a mailbox path for mail.create_mailbox. Nested mailboxes use "/".

@@ -85,7 +85,7 @@ export const OPERATION_PROFILES = {
   },
   mailMove: {
     // Reason: one whose-lookup per message in the source mailbox; a batch of
-    // MAIL_MOVE_MAX_IDS needs more than a single write but stays bounded.
+    // MAIL_BATCH_MAX_IDS needs more than a single write but stays bounded.
     name: "mail.move",
     lane: "mail",
     timeoutMs: 60_000,
