@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   appendMailLocatorArgs,
-  MAIL_MOVE_MAX_IDS,
+  MAIL_BATCH_MAX_IDS,
   normalizeMailboxPath,
   requireMailLocator,
 } from "../mailSafety.js";
@@ -280,13 +280,13 @@ export function registerMailTools(server: McpServer): void {
 
   server.tool(
     "mail.move",
-    `Move one or more messages to another mailbox (folder), optionally in another account. Requires the source account and mailbox from a recent mail.search, mail.unread_summary, or mail.flagged result. Up to ${MAIL_MOVE_MAX_IDS} message IDs per call. The message ID (RFC Message-ID) stays the same after the move; use it with the returned target account/mailbox. Reports moved, notFound, and failed IDs separately. The target mailbox must exist (see mail.create_mailbox). Requires Mail.app to be running.`,
+    `Move one or more messages to another mailbox (folder), optionally in another account. Requires the source account and mailbox from a recent mail.search, mail.unread_summary, or mail.flagged result. Up to ${MAIL_BATCH_MAX_IDS} message IDs per call. The message ID (RFC Message-ID) stays the same after the move; use it with the returned target account/mailbox. Reports moved, notFound, and failed IDs separately. The target mailbox must exist (see mail.create_mailbox). Requires Mail.app to be running.`,
     {
       messageIds: z
         .array(z.string().min(1))
         .min(1)
-        .max(MAIL_MOVE_MAX_IDS)
-        .describe(`Message IDs to move (from mail.search etc.), 1 to ${MAIL_MOVE_MAX_IDS}`),
+        .max(MAIL_BATCH_MAX_IDS)
+        .describe(`Message IDs to move (from mail.search etc.), 1 to ${MAIL_BATCH_MAX_IDS}`),
       account: z
         .string()
         .min(1)

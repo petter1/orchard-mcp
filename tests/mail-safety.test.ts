@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   appendMailLocatorArgs,
-  MAIL_MOVE_MAX_IDS,
+  MAIL_BATCH_MAX_IDS,
   normalizeMailboxPath,
   requireMailLocator,
 } from "../src/mailSafety.js";
@@ -90,7 +90,7 @@ describe("mail.create_mailbox path validation", () => {
 
 describe("mail.move bridge contract", () => {
   it("keeps the batch bounded", () => {
-    assert.equal(MAIL_MOVE_MAX_IDS, 25);
+    assert.equal(MAIL_BATCH_MAX_IDS, 25);
   });
 
   it("looks messages up only in the given source mailbox and checks both mailboxes first", () => {
