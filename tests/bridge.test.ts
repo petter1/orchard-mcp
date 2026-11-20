@@ -130,3 +130,49 @@ describe("bridge timeout: SIGKILL reaches grandchildren after parent exits on SI
     assert.equal(alive, false, `grandchild ${grandPid} should have been SIGKILLed once the bridge timed out`);
   });
 });
+
+describe("preferApp routing", () => {
+  let tmpDir: string;
+  let savedBin: string | undefined;
+  let savedApp: string | undefined;
+
+  before(async () => {
+    tmpDir = await mkdtemp(resolve(tmpdir(), "orchard-prefer-app-"));
+    const stubBin = resolve(tmpDir, "stub-bridge");
+    await writeFile(
+      stubBin,
+      `#!/bin/sh\necho '{"status":"ok","data":{"via":"direct"}}'\n`,
+      { mode: 0o755 }
+    );
+    savedBin = process.env.APPLE_BRIDGE_BIN;
+    savedApp = process.env.APPLE_BRIDGE_APP;
+    process.env.APPLE_BRIDGE_BIN = stubBin;
+  });
+
+  after(async () => {
+    if (savedBin === undefined) delete process.env.APPLE_BRIDGE_BIN;
+    else process.env.APPLE_BRIDGE_BIN = savedBin;
+    if (savedApp === undefined) delete process.env.APPLE_BRIDGE_APP;
+    else process.env.APPLE_BRIDGE_APP = savedApp;
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("keeps an APPLE_BRIDGE_BIN override instead of the default app bundle", async () => {
+    delete process.env.APPLE_BRIDGE_APP;
+    const { callBridge } = await import("../src/bridge.js");
+    const result = await callBridge(["doctor"], { preferApp: true });
+    assert.deepEqual(result, { status: "ok", data: { via: "direct" } });
+  });
+
+  it("falls back to the direct binary when the app bundle is missing", async () => {
+    process.env.APPLE_BRIDGE_APP = resolve(tmpDir, "Missing.app");
+    const { callBridge } = await import("../src/bridge.js");
+    const result = await callBridge(["doctor"], { preferApp: true });
+    assert.deepEqual(result, { status: "ok", data: { via: "direct" } });
+  });
+
+  it("runs system doctor through the app bundle", async () => {
+    const { OPERATION_PROFILES } = await import("../src/safety.js");
+    assert.equal(OPERATION_PROFILES.systemDoctor.preferApp, true);
+  });
+});

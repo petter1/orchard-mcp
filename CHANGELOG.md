@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- **`system_doctor` reported Calendar/Contacts as denied although the tools worked.** macOS attaches TCC grants to the `AppleBridge.app` identity, but the doctor ran the bare binary and returned success, so the "access denied" fallback to the app bundle never triggered. The doctor now runs through the app bundle (new `preferApp` bridge option, set on the `systemDoctor` safety profile; skipped when `APPLE_BRIDGE_BIN` is overridden without `APPLE_BRIDGE_APP`). `orchard-mcp setup` uses the same path for its permission checks and validation.
+
 ## [0.6.3] - 2026-05-27
 
 ### Fixed
