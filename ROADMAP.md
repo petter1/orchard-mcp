@@ -4,7 +4,7 @@ Diese Datei gilt nur für den Fork. Sie soll reichen, damit eine Session ohne Vo
 
 - Fork: https://github.com/petter1/orchard-mcp (`origin`)
 - Upstream: https://github.com/l22-io/orchard-mcp (`upstream`), MIT, TypeScript + Swift-Bridge
-- Stand 18.11.2026: Fork identisch mit `upstream/main` (Version 0.6.5), abgesehen von dieser Roadmap
+- Stand 20.11.2026: `main` = upstream 0.6.5 + alle Fork-Änderungen (#1–#13 ausser offenen Live-Tests), 74 Tools, 184/184 Tests. `main` ist der Arbeitsstand für alle Sessions.
 - Schwesterprojekt: https://github.com/petter1/icloud-mcp (Go, iCloud über CalDAV/CardDAV/IMAP/SMTP, siehe dort `ROADMAP.md`)
 
 ## Ziel
@@ -53,12 +53,12 @@ Orchard im Fork verbessern und lokal nutzen (kein aktives Upstreaming, Entscheid
 ## Doppelarbeit 18.–20.11.2026 (erledigt)
 
 - Cloud-Sessions 18./19.11. und die Mac-Session 20.11. haben #8–#12 parallel gelöst, weil die Cloud-Arbeit nicht auf `main` lag. Entscheid 20.11.: Mac-Version bleibt. Cloud-Stände archiviert unter `archive/cloud/fix/contacts-usage-description`, `archive/cloud/fix/doctor-via-app-bundle`, `archive/cloud/fix/calendar-local-day-window`, `archive/cloud/docs/permission-dialog-hint`, `archive/cloud/claude/inspiring-cray-n2nrrt`, `archive/cloud/claude/nice-hamilton-yu3ghi`.
-- Hinweis aus der Cloud-Session (noch offen): Ab macOS 14 erwartet `requestFullAccessToEvents`/`…Reminders` die Keys `NSCalendarsFullAccessUsageDescription` und `NSRemindersFullAccessUsageDescription`. Die plist hat nur die alten Keys. Läuft bisher trotzdem; beobachten und bei Bedarf ergänzen.
+- Hinweis aus der Cloud-Session: Ab macOS 14 erwartet `requestFullAccessToEvents`/`…Reminders` die Keys `NSCalendarsFullAccessUsageDescription` und `NSRemindersFullAccessUsageDescription`. ✅ 20.11. ergänzt (Branch `fix/full-access-usage-keys`, in `main`, Metadaten-Test). Bridge noch nicht neu gebaut, weil jeder Neubau die macOS-Dialoge erneut auslöst; beim nächsten Build am Mac mitnehmen.
 - Upstream (l22-io) reviewt seit Juni 2026 keine PRs. Fremde offene PRs überschneiden sich: #13 `calendar.create_event` (nur Anlegen) mit #5, #15 «inbox of account»-Fix mit Mail-Code von #3.
 
 ## Branches (Stand 20.11.2026, gepusht nach `origin`)
 
-| Branch | Basis | Inhalt | Upstream-PR |
+| Branch | Basis | Inhalt | Upstream-PR (nur durch Yanik) |
 |---|---|---|---|
 | `fix/doctor-via-app-bundle` | `main` | #10 | ja |
 | `fix/contacts-usage-description` | `main` | #8 | ja |
@@ -71,7 +71,8 @@ Orchard im Fork verbessern und lokal nutzen (kein aktives Upstreaming, Entscheid
 | `feat/calendar-write` | `fix/local-time-dates` | #5 | ja, nach #11 und Live-Test |
 | `feat/reminders-update` | `fix/local-time-dates` | #6 | ja, nach #11 und Live-Test |
 | `feat/calendar-compact-output` | `main` | #12 | ja |
-| `fork/local` | `main` | alles zusammen, für den lokalen Build: 74 Tools, 183/183 Tests | nein |
+| `fix/full-access-usage-keys` | `main` | macOS-14-Keys für EventKit | ja |
+| `fork/local` | `main` | früher Sammelbranch; seit 20.11. ist `main` gleich weit, `fork/local` nicht mehr nötig | nein |
 
 Upstream-Varianten ✅ 20.11.: Jeder Branch liegt zusätzlich als `pr/<branch>` direkt auf `upstream/main` (eigene Commits per Cherry-Pick, ohne `ROADMAP.md` und Fork-Zeile in `AGENTS.md`). Alle `pr/*` ohne Konflikte, Typecheck sauber, Tests grün (153 + neue Tests). `pr/feat/mail-list-messages`, `pr/feat/calendar-write` und `pr/feat/reminders-update` bauen auf `pr/fix/local-time-dates`. Gepusht, aber kein Upstream-PR durch Claude. Jeder Branch hat einen eigenen `## [Unreleased]`-Block im `CHANGELOG.md` und eigene Tool-Zahlen in README/AGENTS/CONTRIBUTING. Beim Zusammenführen gibt es dort einfache Konflikte.
 
@@ -114,9 +115,9 @@ Plan:
    | `mail_search`, `mail_unread_summary`, `mail_flagged` | `search_messages` (mit Filtern) |
    | `mail_read_message` | `get_message` |
    | `mail_list_messages` | `search_messages` ohne Text, mit Zeitfenster (prüfen) bzw. `list_mailboxes` für die Ordner |
-   | `mail_move` | `move_message` (einzeln), `move_messages` (Batch, icloud-mcp-Branch `feat/move-messages-v1.2`) |
+   | `mail_move` | `move_message` (einzeln), `move_messages` (Batch, im icloud-mcp-Fork `main` seit 20.11.) |
    | `mail_set_flag`, `mail_mark_read` | `set_message_flags` |
-   | `mail_create_mailbox` | `create_mailbox` (icloud-mcp-Branch `feat/create-mailbox-v1.2`, upstream fehlt es) |
+   | `mail_create_mailbox` | `create_mailbox` (im icloud-mcp-Fork `main` seit 20.11., upstream fehlt es) |
    | `mail_create_draft`, `mail_save_attachment` | fehlt bzw. anders (`send_message` sendet direkt, nicht als Entwurf) |
 
 4. **Sicherheit:** Die App-Safety-Grenzen aus `src/safety.ts` (Zeit, Ausgabegrösse, breite Anfragen ablehnen) gelten auch für den Linux-Pfad. icloud-mcp standardmässig nur lesend starten (`ICLOUD_MCP_READ_ONLY=true`). Schreibrechte nur gezielt freigeben.
