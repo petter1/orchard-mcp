@@ -215,6 +215,12 @@ enum MailBridge {
                 mailboxTarget = "inbox"
             }
 
+            // Known locator parts are passed through; empty parts are read
+            // per message (unified inbox, or inbox keyword whose real name
+            // differs per account, e.g. "INBOX" vs "Inbox").
+            let accountLocator = (account == nil || account == "all") ? "" : account!
+            let mailboxLocator = mailbox ?? ""
+
             let fallbackBlock: String
             if account != nil && account != "all" && mailbox == nil {
                 fallbackBlock = """
@@ -248,8 +254,18 @@ enum MailBridge {
                     set msgDate to date received of msg as «class isot» as string
                     set msgRead to read status of msg
                     set msgFlagged to flagged status of msg
-                    set msgAccount to "\(escapeForAppleScript(account ?? ""))"
-                    set msgMbox to "\(escapeForAppleScript(mailbox ?? "INBOX"))"
+                    set msgAccount to "\(escapeForAppleScript(accountLocator))"
+                    set msgMbox to "\(escapeForAppleScript(mailboxLocator))"
+                    -- Reason: the unified inbox has no fixed account or mailbox
+                    -- name; read them from the message so the returned locator
+                    -- works with mail.read_message and friends.
+                    if msgAccount is "" or msgMbox is "" then
+                        try
+                            set msgMboxRef to mailbox of msg
+                            if msgMbox is "" then set msgMbox to name of msgMboxRef
+                            if msgAccount is "" then set msgAccount to name of account of msgMboxRef
+                        end try
+                    end if
                     set end of resultList to msgId & "|||" & msgSubject & "|||" & msgSender & "|||" & msgDate & "|||" & (msgRead as string) & "|||" & (msgFlagged as string) & "|||" & ((count of mail attachments of msg) as string) & "|||" & msgAccount & "|||" & msgMbox
                 end repeat
                 return my joinList(resultList, "^^^") & "###TOTAL:::" & (msgCount as string)

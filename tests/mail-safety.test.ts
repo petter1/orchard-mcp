@@ -67,3 +67,11 @@ describe("mail locator safety", () => {
     assert.doesNotMatch(body, /unread count of mbox/);
   });
 });
+
+describe("mail.search locator", () => {
+  it("reads account and mailbox from the message instead of hard-coding INBOX", () => {
+    const body = swiftFunctionBody("search");
+    assert.doesNotMatch(body, /mailbox \?\? "INBOX"/);
+    assert.match(body, /name of account of msgMboxRef/);
+  });
+});
