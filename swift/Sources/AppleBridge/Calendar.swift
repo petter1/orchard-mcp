@@ -91,44 +91,7 @@ enum CalendarBridge {
         let predicate = store.predicateForEvents(withStart: startDate, end: endDate, calendars: calendars)
         let events = Array(store.events(matching: predicate).prefix(maxCalendarResults))
 
-        let result: [[String: Any]] = events.map { evt in
-            var dict: [String: Any] = [
-                "id": evt.eventIdentifier ?? "",
-                "title": evt.title ?? "(no title)",
-                "start": iso8601(evt.startDate),
-                "end": iso8601(evt.endDate),
-                "isAllDay": evt.isAllDay,
-                "calendar": evt.calendar.title,
-                "calendarId": evt.calendar.calendarIdentifier
-            ]
-            if let location = evt.location, !location.isEmpty {
-                dict["location"] = location
-            }
-            if let notes = evt.notes, !notes.isEmpty {
-                dict["notes"] = notes
-            }
-            if let url = evt.url {
-                dict["url"] = url.absoluteString
-            }
-            if evt.hasRecurrenceRules {
-                dict["isRecurring"] = true
-            }
-            if let attendees = evt.attendees, !attendees.isEmpty {
-                dict["attendees"] = attendees.map { a in
-                    var info: [String: Any] = [
-                        "name": a.name ?? a.url.absoluteString,
-                        "status": participantStatusName(a.participantStatus)
-                    ]
-                    if a.isCurrentUser {
-                        info["isMe"] = true
-                    }
-                    return info
-                }
-            }
-            return dict
-        }
-
-        JSONOutput.success(result)
+        JSONOutput.success(events.map(eventDict))
     }
 
     /// Search events by title within a date range.
@@ -175,7 +138,242 @@ enum CalendarBridge {
         JSONOutput.success(result)
     }
 
+    // MARK: - Write
+
+    enum Span: String {
+        case thisEvent, futureEvents
+        var ekSpan: EKSpan { self == .thisEvent ? .thisEvent : .futureEvents }
+    }
+
+    struct EventFields {
+        var title: String?
+        var start: String?
+        var end: String?
+        var allDay: Bool?
+        var location: String?
+        var notes: String?
+        var url: String?
+    }
+
+    /// Create an event. For all-day events, start/end are days and end is the
+    /// last day (inclusive); end may be omitted for a one-day event.
+    static func createEvent(calendarID: String?, fields: EventFields) async {
+        guard await requestAccess() else {
+            JSONOutput.error("Calendar access denied.")
+            return
+        }
+        guard let title = fields.title, !title.trimmingCharacters(in: .whitespaces).isEmpty else {
+            JSONOutput.error("event-create requires a non-empty --title.")
+            return
+        }
+        let calendar: EKCalendar
+        if let calID = calendarID {
+            guard let cal = store.calendar(withIdentifier: calID) else {
+                JSONOutput.error("Calendar not found: \(calID)")
+                return
+            }
+            calendar = cal
+        } else {
+            guard let cal = store.defaultCalendarForNewEvents else {
+                JSONOutput.error("No default calendar for new events. Pass --calendar.")
+                return
+            }
+            calendar = cal
+        }
+        guard calendar.allowsContentModifications else {
+            JSONOutput.error("Calendar \"\(calendar.title)\" is read-only.")
+            return
+        }
+        guard fields.start != nil else {
+            JSONOutput.error("event-create requires --start.")
+            return
+        }
+        let event = EKEvent(eventStore: store)
+        event.calendar = calendar
+        guard apply(fields, to: event, isNew: true) else { return }
+        do {
+            try store.save(event, span: .thisEvent, commit: true)
+        } catch {
+            JSONOutput.error("Saving the event failed: \(error.localizedDescription)")
+            return
+        }
+        JSONOutput.success(eventDict(event))
+    }
+
+    static func updateEvent(id: String, occurrenceISO: String?, span: Span, fields: EventFields) async {
+        guard await requestAccess() else {
+            JSONOutput.error("Calendar access denied.")
+            return
+        }
+        guard let event = locateEvent(id: id, occurrenceISO: occurrenceISO, span: span) else { return }
+        guard apply(fields, to: event, isNew: false) else { return }
+        do {
+            try store.save(event, span: span.ekSpan, commit: true)
+        } catch {
+            JSONOutput.error("Saving the event failed: \(error.localizedDescription)")
+            return
+        }
+        JSONOutput.success(eventDict(event))
+    }
+
+    static func deleteEvent(id: String, occurrenceISO: String?, span: Span) async {
+        guard await requestAccess() else {
+            JSONOutput.error("Calendar access denied.")
+            return
+        }
+        guard let event = locateEvent(id: id, occurrenceISO: occurrenceISO, span: span) else { return }
+        let summary = eventDict(event)
+        do {
+            try store.remove(event, span: span.ekSpan, commit: true)
+        } catch {
+            JSONOutput.error("Deleting the event failed: \(error.localizedDescription)")
+            return
+        }
+        JSONOutput.success(["deleted": summary, "span": span.rawValue] as [String: Any])
+    }
+
+    /// Find an event or one occurrence of a series. Refuses to touch a
+    /// series implicitly: a recurring event needs an occurrence start or an
+    /// explicit futureEvents span.
+    private static func locateEvent(id: String, occurrenceISO: String?, span: Span) -> EKEvent? {
+        guard let base = store.event(withIdentifier: id) else {
+            JSONOutput.error("Event not found: \(id)")
+            return nil
+        }
+        guard base.calendar.allowsContentModifications else {
+            JSONOutput.error("Calendar \"\(base.calendar.title)\" is read-only.")
+            return nil
+        }
+        guard let occurrenceISO = occurrenceISO else {
+            if base.hasRecurrenceRules && span == .thisEvent {
+                JSONOutput.error("Event \(id) is recurring. Pass --occurrence-start (the start of the occurrence from calendar.list_events) to change one occurrence, or --span futureEvents to change the whole series.")
+                return nil
+            }
+            return base
+        }
+        guard let occurrence = try? DateParsing.parseISO(occurrenceISO) else {
+            JSONOutput.error("\(DateParseError(input: occurrenceISO))")
+            return nil
+        }
+        let predicate = store.predicateForEvents(
+            withStart: occurrence.addingTimeInterval(-60),
+            end: occurrence.addingTimeInterval(86_400),
+            calendars: [base.calendar]
+        )
+        let match = store.events(matching: predicate).first {
+            $0.eventIdentifier == id && abs($0.startDate.timeIntervalSince(occurrence)) < 1
+        }
+        guard let found = match else {
+            JSONOutput.error("No occurrence of event \(id) starts at \(occurrenceISO).")
+            return nil
+        }
+        return found
+    }
+
+    /// Copy the given fields onto an event. Reports an error and returns false
+    /// on invalid input.
+    private static func apply(_ fields: EventFields, to event: EKEvent, isNew: Bool) -> Bool {
+        if let title = fields.title {
+            guard !title.trimmingCharacters(in: .whitespaces).isEmpty else {
+                JSONOutput.error("Title must not be empty.")
+                return false
+            }
+            event.title = title
+        }
+        if let allDay = fields.allDay { event.isAllDay = allDay }
+        let oldStart: Date? = isNew ? nil : event.startDate
+        let oldEnd: Date? = isNew ? nil : event.endDate
+        let newStart: Date?
+        let newEnd: Date?
+        do {
+            newStart = try fields.start.map(DateParsing.parseISO)
+            newEnd = try fields.end.map(DateParsing.parseISO)
+        } catch {
+            JSONOutput.error("\(error)")
+            return false
+        }
+        guard var startDate = newStart ?? oldStart else {
+            JSONOutput.error("Event start is required.")
+            return false
+        }
+        var endDate: Date
+        if let given = newEnd {
+            endDate = given
+        } else if let oldStart = oldStart, let oldEnd = oldEnd {
+            // Reason: moving an event without a new end keeps its duration.
+            endDate = startDate.addingTimeInterval(oldEnd.timeIntervalSince(oldStart))
+        } else {
+            endDate = event.isAllDay ? startDate : startDate.addingTimeInterval(3_600)
+        }
+        if event.isAllDay {
+            // Reason: callers name the last day (inclusive); EventKit stores the
+            // end of that day. Subtracting a second keeps an end stored as the
+            // next midnight on the right day.
+            let cal = Calendar.current
+            startDate = cal.startOfDay(for: startDate)
+            let lastDay = newEnd != nil ? cal.startOfDay(for: endDate) : cal.startOfDay(for: max(startDate, endDate.addingTimeInterval(-1)))
+            endDate = cal.date(byAdding: .second, value: 86_399, to: lastDay)!
+        }
+        guard endDate >= startDate else {
+            JSONOutput.error("Event end must be on or after its start.")
+            return false
+        }
+        event.startDate = startDate
+        event.endDate = endDate
+        if let location = fields.location { event.location = location.isEmpty ? nil : location }
+        if let notes = fields.notes { event.notes = notes.isEmpty ? nil : notes }
+        if let url = fields.url {
+            if url.isEmpty {
+                event.url = nil
+            } else {
+                guard let parsed = URL(string: url), parsed.scheme != nil else {
+                    JSONOutput.error("Invalid URL: \(url)")
+                    return false
+                }
+                event.url = parsed
+            }
+        }
+        return true
+    }
+
     // MARK: - Helpers
+
+    private static func eventDict(_ evt: EKEvent) -> [String: Any] {
+        var dict: [String: Any] = [
+            "id": evt.eventIdentifier ?? "",
+            "title": evt.title ?? "(no title)",
+            "start": iso8601(evt.startDate),
+            "end": iso8601(evt.endDate),
+            "isAllDay": evt.isAllDay,
+            "calendar": evt.calendar.title,
+            "calendarId": evt.calendar.calendarIdentifier
+        ]
+        if let location = evt.location, !location.isEmpty {
+            dict["location"] = location
+        }
+        if let notes = evt.notes, !notes.isEmpty {
+            dict["notes"] = notes
+        }
+        if let url = evt.url {
+            dict["url"] = url.absoluteString
+        }
+        if evt.hasRecurrenceRules {
+            dict["isRecurring"] = true
+        }
+        if let attendees = evt.attendees, !attendees.isEmpty {
+            dict["attendees"] = attendees.map { a in
+                var info: [String: Any] = [
+                    "name": a.name ?? a.url.absoluteString,
+                    "status": participantStatusName(a.participantStatus)
+                ]
+                if a.isCurrentUser {
+                    info["isMe"] = true
+                }
+                return info
+            }
+        }
+        return dict
+    }
 
     private static func validateRange(start: Date, end: Date, tool: String) -> Bool {
         guard end >= start else {

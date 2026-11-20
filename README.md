@@ -51,7 +51,7 @@ Calendars"), triggered automatically on first use or during setup.
 
 ## Status
 
-Current release: 70 tools across Calendar, Mail, Reminders, Files, System, Numbers,
+Current release: 73 tools across Calendar, Mail, Reminders, Files, System, Numbers,
 Pages, Keynote, Notes, and Contacts. See [CHANGELOG.md](CHANGELOG.md) for release
 history.
 
@@ -128,6 +128,9 @@ Tool names use underscores for Claude Desktop Chat compatibility.
 - `calendar_list_events` - Events in a date range (recurring events expanded)
 - `calendar_today` - Today's events across all calendars
 - `calendar_search` - Search events by title, notes, or location
+- `calendar_create_event` - Create an event (timed or all-day) in a calendar
+- `calendar_update_event` - Change an event or one occurrence of a series (`occurrenceStart`, `span`)
+- `calendar_delete_event` - Delete an event or one occurrence of a series
 
 ### Mail
 
@@ -243,6 +246,9 @@ attached to the app bundle. Direct binary execution is still available through
 apple-bridge calendars
 apple-bridge events
 apple-bridge search
+apple-bridge event-create
+apple-bridge event-update
+apple-bridge event-delete
 apple-bridge mail-accounts
 apple-bridge mail-unread
 apple-bridge mail-search

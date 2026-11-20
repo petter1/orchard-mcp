@@ -6,11 +6,14 @@ import { createOrchardServer } from "../src/server.js";
 const FRONTEND_TOOL_NAME_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
 
 const EXPECTED_TOOLS = [
-  // Calendar (4)
+  // Calendar (7)
   "calendar_list_calendars",
   "calendar_list_events",
   "calendar_today",
   "calendar_search",
+  "calendar_create_event",
+  "calendar_update_event",
+  "calendar_delete_event",
   // Mail (12)
   "mail_list_accounts",
   "mail_unread_summary",
@@ -95,10 +98,10 @@ describe("tool registration", () => {
     server = createOrchardServer();
   });
 
-  it("registers exactly 70 tools", () => {
+  it("registers exactly 73 tools", () => {
     const tools = (server as any)._registeredTools as Record<string, unknown>;
     const names = Object.keys(tools);
-    assert.equal(names.length, 70, `Expected 70 tools, got ${names.length}: ${names.join(", ")}`);
+    assert.equal(names.length, 73, `Expected 73 tools, got ${names.length}: ${names.join(", ")}`);
   });
 
   it("uses Claude Desktop Chat-compatible tool names", () => {
