@@ -204,7 +204,8 @@ enum ContactsBridge {
         dict["addresses"] = c.postalAddresses.map { postalDict($0) }
         dict["urls"] = c.urlAddresses.map { labeled($0.label, $0.value as String) }
         if let bday = c.birthday, let date = Calendar(identifier: .gregorian).date(from: bday) {
-            dict["birthday"] = ISO8601DateFormatter().string(from: date)
+            // Reason: a birthday is a calendar day; a GMT timestamp showed it a day early.
+            dict["birthday"] = isoDay(date)
         }
         dict["hasImage"] = c.imageDataAvailable
         return dict
