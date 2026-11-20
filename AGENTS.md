@@ -33,6 +33,8 @@ MCP Client (stdio JSON-RPC) -> TypeScript Server (Node.js) -> Swift CLI (apple-b
 
 **Tool modules:** `src/tools/*.ts` each exports a `register*Tools(server)` function. Tools use `server.tool(name, description, zodSchema, asyncHandler)`. Tool names are namespaced: `calendar.*`, `mail.*`, `reminders.*`, `files.*`, `system.*`, `numbers.*`, `pages.*`, `keynote.*`, `notes.*`, `contacts.*`. 74 tools total.
 
+**Linux backend:** On Linux, `createOrchardServer()` registers `src/icloud/*.ts` instead: Calendar, Contacts, and Mail under the same tool names (21 tools), served by an `icloud-mcp` child process (`ICLOUD_MCP_BIN`, MCP over stdio). Orchard forwards only `ICLOUD_*` variables and never reads credentials. iCloud objects get opaque Orchard ids (`src/icloud/ids.ts`). Calls go through `runWithOperationProfile` with the `icloud*` profiles. Tests pin `platform: "darwin"` or `"linux"` explicitly.
+
 **App Safety:** Tool modules must call `safeBridgeData(args, OPERATION_PROFILES.<profile>)` from `src/safety.ts`, not `bridgeData` directly. The safety layer serializes host-app lanes, applies queue/time/output budgets, and refuses broad requests before they can make Mail.app or other apps unresponsive. Keep [docs/app-safety-audit.md](docs/app-safety-audit.md) current when changing tool scope, timeouts, result limits, or app automation.
 
 **Swift bridge:** `swift/Sources/AppleBridge/` contains a Swift CLI using ArgumentParser. Each subcommand maps to a tool. All output goes through `JSONOutput.success(data)` or `JSONOutput.error(msg)` to maintain the JSON envelope contract.

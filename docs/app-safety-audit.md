@@ -25,6 +25,22 @@ orchard-mcp must protect the user's Mac first. A tool call is allowed to return 
 | Contacts | Contacts.framework | Calls run through the Contacts lane and output budget. Phone substring fallback stops after a native scan budget. |
 | Files | FileManager, Spotlight, PDFKit, Vision, textutil | Calls run through the Files lane. `files.move` accepts at most 50 items per call. `mdfind`, `mdls`, and `textutil` use native subprocess timeouts. PDF, OCR, directory listing, and textutil extraction have native size/page/item budgets. |
 
+## Linux backend (icloud-mcp)
+
+On Linux, Orchard has no host apps to protect; Calendar, Contacts, and Mail go
+to iCloud through an `icloud-mcp` child process. The same guardrails apply:
+
+- Every call runs through `runWithOperationProfile` with the `icloudCalendarRead`,
+  `icloudCalendarWrite`, `icloudContactsRead`, `icloudMailRead`, `icloudMailWrite`,
+  and `icloudSystem` entries in `OPERATION_PROFILES` (lane, timeout, queue, and
+  output-size budget). Oversized results are refused.
+- Calendar list/search ranges stay capped at 31 days; mail paging is bounded
+  (at most 500 scanned summaries per call, 25 ids per batch).
+- Ambiguous recurring changes are refused, as on macOS. Flag changes pass the
+  MODSEQ just read so a concurrent change is detected, not overwritten.
+- icloud-mcp itself is read-only unless `ICLOUD_MCP_PERMISSIONS` grants writes;
+  Orchard forwards only `ICLOUD_*` variables and never reads credential values.
+
 ## Known Follow-Ups
 
 - Add deeper iWork document-size checks where AppleScript can read metadata before expensive text extraction.

@@ -39,7 +39,8 @@
     "swift/Sources"
   ],
   "os": [
-    "darwin"
+    "darwin",
+    "linux"
   ],
   "keywords": [
     "mcp",

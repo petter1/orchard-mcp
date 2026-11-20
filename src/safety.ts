@@ -156,6 +156,52 @@ export const OPERATION_PROFILES = {
     // Calendar/Contacts as denied even when every tool works.
     preferApp: true,
   },
+  // Linux: calls go over the network to iCloud through icloud-mcp, so the
+  // budgets are larger than for local EventKit, but each call stays bounded.
+  icloudCalendarRead: {
+    name: "icloud.calendar.read",
+    lane: "calendar",
+    timeoutMs: 30_000,
+    queueTimeoutMs: 1_000,
+    maxOutputBytes: DEFAULT_OUTPUT_BYTES,
+  },
+  icloudCalendarWrite: {
+    name: "icloud.calendar.write",
+    lane: "calendar",
+    timeoutMs: 45_000,
+    queueTimeoutMs: 1_000,
+    maxOutputBytes: DEFAULT_OUTPUT_BYTES,
+  },
+  icloudContactsRead: {
+    name: "icloud.contacts.read",
+    lane: "contacts",
+    timeoutMs: 30_000,
+    queueTimeoutMs: 1_000,
+    maxOutputBytes: DEFAULT_OUTPUT_BYTES,
+  },
+  icloudMailRead: {
+    name: "icloud.mail.read",
+    lane: "mail",
+    timeoutMs: 30_000,
+    queueTimeoutMs: 500,
+    maxOutputBytes: DEFAULT_OUTPUT_BYTES,
+  },
+  icloudMailWrite: {
+    // Reason: a batch of MAIL_BATCH_MAX_IDS flag changes needs one read and
+    // one STORE per message over IMAP.
+    name: "icloud.mail.write",
+    lane: "mail",
+    timeoutMs: 60_000,
+    queueTimeoutMs: 500,
+    maxOutputBytes: DEFAULT_OUTPUT_BYTES,
+  },
+  icloudSystem: {
+    name: "icloud.system",
+    lane: "doctor",
+    timeoutMs: 45_000,
+    queueTimeoutMs: 500,
+    maxOutputBytes: DEFAULT_OUTPUT_BYTES,
+  },
 } satisfies Record<string, OperationProfile>;
 
 export async function safeBridgeData(

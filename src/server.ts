@@ -10,6 +10,8 @@ import { registerPagesTools } from "./tools/pages.js";
 import { registerKeynoteTools } from "./tools/keynote.js";
 import { registerNotesTools } from "./tools/notes.js";
 import { registerContactsTools } from "./tools/contacts.js";
+import { registerIcloudTools } from "./icloud/index.js";
+import type { IcloudCaller } from "./icloud/client.js";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../package.json") as { version: string };
@@ -38,12 +40,24 @@ function useFrontendToolNames(server: McpServer): void {
   ) => originalTool(toFrontendToolName(name), ...rest);
 }
 
-export function createOrchardServer(): McpServer {
+export interface OrchardServerOptions {
+  /** Defaults to process.platform. "linux" serves iCloud through icloud-mcp. */
+  platform?: NodeJS.Platform;
+  /** Linux only: replaces the icloud-mcp child process (tests). */
+  icloudCaller?: IcloudCaller;
+}
+
+export function createOrchardServer(options: OrchardServerOptions = {}): McpServer {
   const server = new McpServer({
     name: "orchard-mcp",
     version: packageJson.version,
   });
   useFrontendToolNames(server);
+
+  if ((options.platform ?? process.platform) === "linux") {
+    registerIcloudTools(server, options.icloudCaller);
+    return server;
+  }
 
   registerCalendarTools(server);
   registerMailTools(server);

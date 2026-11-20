@@ -3,11 +3,11 @@ import { z } from "zod";
 import { assertIsoDateRangeWithinDays } from "../resourceGuards.js";
 import { OPERATION_PROFILES, safeBridgeData } from "../safety.js";
 
-const MAX_CALENDAR_RANGE_DAYS = 31;
+export const MAX_CALENDAR_RANGE_DAYS = 31;
 
 const COMPACT_EVENT_FIELDS = ["id", "title", "start", "end", "isAllDay", "calendar", "location", "isRecurring"];
 
-const detailSchema = z
+export const detailSchema = z
   .enum(["full", "compact"])
   .optional()
   .describe("full (default): all fields, pretty-printed. compact: id, title, start, end, isAllDay, calendar, location, isRecurring only, unindented JSON. Use compact for ranges over a few days.");

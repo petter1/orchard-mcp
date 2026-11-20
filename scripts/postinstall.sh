@@ -11,7 +11,9 @@ SHASUM_FILE="$SWIFT_DIR/.build/AppleBridge.app.sha256"
 INNER_BIN="$APP_BUNDLE/Contents/MacOS/apple-bridge"
 
 if [ "$(uname)" != "Darwin" ]; then
-    echo "[orchard-mcp] macOS required. Skipping postinstall."
+    # Reason: Linux serves Calendar, Contacts, and Mail through icloud-mcp;
+    # there is no Swift bridge to build.
+    echo "[orchard-mcp] Not macOS: skipping the Swift bridge. On Linux set ICLOUD_MCP_BIN (see README, Linux)."
     exit 0
 fi
 

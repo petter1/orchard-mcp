@@ -16,7 +16,7 @@ const packageJson = JSON.parse(readRepoFile("package.json")) as {
 };
 
 function registeredToolCount(): number {
-  const server = createOrchardServer();
+  const server = createOrchardServer({ platform: "darwin" });
   return Object.keys((server as any)._registeredTools as Record<string, unknown>).length;
 }
 

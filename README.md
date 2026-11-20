@@ -128,6 +128,58 @@ Add to your MCP settings:
 {"command": "npx", "args": ["@l22-io/orchard-mcp"]}
 ```
 
+## Linux
+
+On Linux, orchard-mcp serves Calendar, Contacts, and Mail from iCloud through
+[icloud-mcp](https://github.com/ThomasCrouzet/icloud-mcp), started as a child
+process over MCP stdio. The tool names stay the same as on macOS, so one client
+configuration works on both. Reminders, Notes, Files, Numbers, Pages, Keynote,
+`mail_create_draft`, and `mail_save_attachment` are not available on Linux.
+
+1. Build or download `icloud-mcp` and create an app-specific Apple password.
+2. Point Orchard at the binary and pass the icloud-mcp settings. Orchard forwards
+   only `ICLOUD_*` variables and never reads their values:
+
+```json
+{
+  "mcpServers": {
+    "orchard": {
+      "command": "npx",
+      "args": ["@l22-io/orchard-mcp"],
+      "env": {
+        "ICLOUD_MCP_BIN": "/usr/local/bin/icloud-mcp",
+        "ICLOUD_EMAIL": "file:///home/me/.config/icloud-mcp/email",
+        "ICLOUD_PASSWORD": "file:///home/me/.config/icloud-mcp/password",
+        "ICLOUD_MCP_ENABLE_CONTACTS": "true",
+        "ICLOUD_MCP_ENABLE_MAIL": "true",
+        "ICLOUD_MAIL_ADDRESS": "file:///home/me/.config/icloud-mcp/mail_address"
+      }
+    }
+  }
+}
+```
+
+3. Call `system_doctor`; it lists the enabled domains and runs icloud-mcp's
+   read-only probes.
+
+icloud-mcp is read-only by default. Writes need explicit tokens, e.g.
+`ICLOUD_MCP_PERMISSIONS=calendar.read,contacts.read,mail.read,calendar.write,mail.mutate`.
+Times without an offset are local time (Orchard sets `ICLOUD_MCP_DEFAULT_TZ`
+to the local zone unless you set it).
+
+Differences from macOS:
+
+- Ids are opaque Orchard ids that pack the iCloud identity (calendar path and
+  UID, mailbox with UIDVALIDITY and UID, address book and UID). Use them only
+  with tools on the same machine.
+- Mail has one account, `iCloud`. `mail_search`, `mail_flagged`, and
+  `mail_unread_summary` look at one mailbox (default INBOX); date filters have
+  day granularity.
+- `calendar_create_event` needs `calendarId`. A recurring series can change one
+  occurrence or the whole series (iCloud cannot split a series); `allDay` cannot
+  change on update.
+- `contacts_list_groups` lists address books.
+
 ## Available Tools
 
 Tool names use underscores for Claude Desktop Chat compatibility.

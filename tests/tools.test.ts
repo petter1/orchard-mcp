@@ -96,7 +96,7 @@ describe("tool registration", () => {
   let server: McpServer;
 
   before(() => {
-    server = createOrchardServer();
+    server = createOrchardServer({ platform: "darwin" });
   });
 
   it("registers exactly 74 tools", () => {
