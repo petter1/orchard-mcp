@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **`detail: "compact"`** for `calendar_list_events`, `calendar_today`, and `calendar_search`: returns only id, title, start, end, isAllDay, calendar, location, and isRecurring as unindented JSON, so multi-week answers stay small. Default (`full`) is unchanged.
+
 ## [0.6.3] - 2026-05-27
 
 ### Fixed
