@@ -290,6 +290,70 @@ enum MailBridge {
         }
     }
 
+    /// List messages of one mailbox, newest first as Mail.app orders them,
+    /// with paging and an optional received-date window.
+    static func listMessages(account: String, mailbox: String, since: Date?, before: Date?, limit: Int, offset: Int) {
+        // Reason: express the bounds relative to "current date" so AppleScript
+        // needs no locale-dependent date literal and the time zone stays right.
+        var conditions: [String] = []
+        if let since = since {
+            conditions.append("date received ≥ (nowDate + (\(Int(since.timeIntervalSinceNow.rounded(.down)))))")
+        }
+        if let before = before {
+            conditions.append("date received < (nowDate + (\(Int(before.timeIntervalSinceNow.rounded(.down)))))")
+        }
+        let whereClause = conditions.isEmpty ? "" : "whose " + conditions.joined(separator: " and ")
+
+        let script = """
+        tell application "Mail"
+            set nowDate to current date
+            try
+                set srcBox to mailbox "\(escapeForAppleScript(mailbox))" of account "\(escapeForAppleScript(account))"
+                get name of srcBox
+            on error
+                return "ERROR_SOURCE_NOT_FOUND"
+            end try
+            set msgs to (every message of srcBox \(whereClause))
+            set msgCount to count of msgs
+            set resultList to {}
+            set startIdx to \(offset) + 1
+            set endIdx to startIdx + \(limit) - 1
+            if endIdx > msgCount then set endIdx to msgCount
+            repeat with i from startIdx to endIdx
+                set msg to item i of msgs
+                set msgDate to date received of msg as «class isot» as string
+                set end of resultList to (message id of msg) & "|||" & (subject of msg) & "|||" & (sender of msg) & "|||" & msgDate & "|||" & ((read status of msg) as string) & "|||" & ((flagged status of msg) as string) & "|||" & ((count of mail attachments of msg) as string) & "|||" & "\(escapeForAppleScript(account))" & "|||" & "\(escapeForAppleScript(mailbox))"
+            end repeat
+            return my joinList(resultList, "^^^") & "###TOTAL:::" & (msgCount as string)
+        end tell
+
+        on joinList(theList, delim)
+            set oldDelim to AppleScript's text item delimiters
+            set AppleScript's text item delimiters to delim
+            set theResult to theList as string
+            set AppleScript's text item delimiters to oldDelim
+            return theResult
+        end joinList
+        """
+
+        guard let raw = runAppleScript(script) else { return }
+        if raw == "ERROR_SOURCE_NOT_FOUND" {
+            JSONOutput.error("Mailbox \"\(mailbox)\" not found in account \"\(account)\".")
+            return
+        }
+        let totalParts = raw.components(separatedBy: "###TOTAL:::")
+        let total = totalParts.count > 1 ? Int(totalParts[1].trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0 : 0
+        JSONOutput.success([
+            "account": account,
+            "mailbox": mailbox,
+            "messages": parseMessageList(totalParts[0]),
+            "total": total,
+            "offset": offset,
+            "limit": limit,
+            "hasMore": offset + limit < total
+        ] as [String: Any])
+    }
+
     /// Get full message content by message ID.
     static func readMessage(messageId: String, maxBodyLength: Int, account: String?, mailbox: String?) {
         let escapedId = escapeForAppleScript(messageId)
