@@ -114,3 +114,11 @@ describe("mail status bridge contract", () => {
     assert.match(body, /ERROR_SOURCE_NOT_FOUND/);
   });
 });
+
+describe("mail.search locator", () => {
+  it("reads account and mailbox from the message instead of hard-coding INBOX", () => {
+    const body = swiftFunctionBody("search");
+    assert.doesNotMatch(body, /mailbox \?\? "INBOX"/);
+    assert.match(body, /name of account of msgMboxRef/);
+  });
+});
