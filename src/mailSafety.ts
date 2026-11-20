@@ -20,3 +20,6 @@ export function requireMailLocator(toolName: string, locator: MailLocator): void
     );
   }
 }
+
+/** Upper bound for message IDs in one batch call (status updates, moves). */
+export const MAIL_BATCH_MAX_IDS = 25;

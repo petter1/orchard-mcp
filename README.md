@@ -50,7 +50,7 @@ Calendars"), triggered automatically on first use or during setup.
 
 ## Status
 
-Current release: 65 tools across Calendar, Mail, Reminders, Files, System, Numbers,
+Current release: 67 tools across Calendar, Mail, Reminders, Files, System, Numbers,
 Pages, Keynote, Notes, and Contacts. See [CHANGELOG.md](CHANGELOG.md) for release
 history.
 
@@ -137,6 +137,8 @@ Tool names use underscores for Claude Desktop Chat compatibility.
 - `mail_flagged` - List flagged messages across all accounts with pagination
 - `mail_create_draft` - Create a draft email in Mail.app for review
 - `mail_save_attachment` - Save an email attachment to disk by message ID, index, account, and mailbox
+- `mail_set_flag` - Flag or unflag up to 25 messages in one mailbox
+- `mail_mark_read` - Mark up to 25 messages in one mailbox as read or unread
 
 ### Reminders
 
@@ -244,6 +246,7 @@ apple-bridge mail-message
 apple-bridge mail-flagged
 apple-bridge mail-create-draft
 apple-bridge mail-save-attachment
+apple-bridge mail-set-status
 apple-bridge reminder-lists
 apple-bridge reminders
 apple-bridge reminders-today
