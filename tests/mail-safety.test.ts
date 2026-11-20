@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   appendMailLocatorArgs,
+  MAIL_MOVE_MAX_IDS,
+  normalizeMailboxPath,
   requireMailLocator,
 } from "../src/mailSafety.js";
 
@@ -65,5 +67,37 @@ describe("mail locator safety", () => {
     assert.match(body, /set mailboxLimit to 50/);
     assert.doesNotMatch(body, /on listMailboxes/);
     assert.doesNotMatch(body, /unread count of mbox/);
+  });
+});
+
+describe("mail.create_mailbox path validation", () => {
+  it("accepts plain and nested names and trims whitespace", () => {
+    assert.equal(normalizeMailboxPath("  Receipts "), "Receipts");
+    assert.equal(normalizeMailboxPath("Projects/2026"), "Projects/2026");
+  });
+
+  it("rejects empty names and empty path segments", () => {
+    for (const bad of ["", "   ", "/Projects", "Projects/", "Projects//2026", "Projects/ /2026"]) {
+      assert.throws(() => normalizeMailboxPath(bad), /must not be empty/, JSON.stringify(bad));
+    }
+  });
+
+  it("rejects control characters and overlong names", () => {
+    assert.throws(() => normalizeMailboxPath("a\nb"), /control characters/);
+    assert.throws(() => normalizeMailboxPath("x".repeat(201)), /at most 200/);
+  });
+});
+
+describe("mail.move bridge contract", () => {
+  it("keeps the batch bounded", () => {
+    assert.equal(MAIL_MOVE_MAX_IDS, 25);
+  });
+
+  it("looks messages up only in the given source mailbox and checks both mailboxes first", () => {
+    const body = swiftFunctionBody("moveMessages");
+    assert.match(body, /whose message id is theId/);
+    assert.doesNotMatch(body, /every mailbox/);
+    assert.ok(body.indexOf("ERROR_TARGET_NOT_FOUND") < body.indexOf("move targetMsg"));
+    assert.ok(body.indexOf("ERROR_SOURCE_NOT_FOUND") < body.indexOf("move targetMsg"));
   });
 });
