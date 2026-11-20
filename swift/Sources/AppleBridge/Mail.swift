@@ -559,6 +559,121 @@ enum MailBridge {
         JSONOutput.success(result)
     }
 
+    /// Move messages (by RFC Message-ID) from one mailbox to another.
+    /// The Message-ID survives the move, so callers keep using the same id
+    /// together with the returned target locator.
+    static func moveMessages(messageIds: [String], account: String, mailbox: String, targetAccount: String, targetMailbox: String) {
+        let idList = messageIds.map { "\"\(escapeForAppleScript($0))\"" }.joined(separator: ", ")
+        let script = """
+        tell application "Mail"
+            try
+                set srcBox to mailbox "\(escapeForAppleScript(mailbox))" of account "\(escapeForAppleScript(account))"
+                get name of srcBox
+            on error
+                return "ERROR_SOURCE_NOT_FOUND"
+            end try
+            try
+                set dstBox to mailbox "\(escapeForAppleScript(targetMailbox))" of account "\(escapeForAppleScript(targetAccount))"
+                get name of dstBox
+            on error
+                return "ERROR_TARGET_NOT_FOUND"
+            end try
+            set resultList to {}
+            repeat with idRef in {\(idList)}
+                set theId to contents of idRef
+                set targetMsg to missing value
+                try
+                    set targetMsg to first message of srcBox whose message id is theId
+                end try
+                if targetMsg is missing value then
+                    set end of resultList to "notfound:::" & theId
+                else
+                    try
+                        move targetMsg to dstBox
+                        set end of resultList to "moved:::" & theId
+                    on error errMsg
+                        set end of resultList to "failed:::" & theId & ":::" & errMsg
+                    end try
+                end if
+            end repeat
+            return my joinList(resultList, "^^^")
+        end tell
+
+        on joinList(theList, delim)
+            set oldDelim to AppleScript's text item delimiters
+            set AppleScript's text item delimiters to delim
+            set theResult to theList as string
+            set AppleScript's text item delimiters to oldDelim
+            return theResult
+        end joinList
+        """
+
+        guard let raw = runAppleScript(script) else { return }
+        if raw == "ERROR_SOURCE_NOT_FOUND" {
+            JSONOutput.error("Source mailbox \"\(mailbox)\" not found in account \"\(account)\".")
+            return
+        }
+        if raw == "ERROR_TARGET_NOT_FOUND" {
+            JSONOutput.error("Target mailbox \"\(targetMailbox)\" not found in account \"\(targetAccount)\". Create it first with mail.create_mailbox.")
+            return
+        }
+
+        var moved: [[String: Any]] = []
+        var notFound: [String] = []
+        var failed: [[String: Any]] = []
+        for entry in raw.components(separatedBy: "^^^") where !entry.isEmpty {
+            let fields = entry.components(separatedBy: ":::")
+            guard fields.count >= 2 else { continue }
+            switch fields[0] {
+            case "moved":
+                moved.append(["id": fields[1], "account": targetAccount, "mailbox": targetMailbox])
+            case "notfound":
+                notFound.append(fields[1])
+            default:
+                failed.append(["id": fields[1], "error": fields.count > 2 ? fields[2...].joined(separator: ":::") : "unknown error"])
+            }
+        }
+
+        JSONOutput.success([
+            "source": ["account": account, "mailbox": mailbox],
+            "target": ["account": targetAccount, "mailbox": targetMailbox],
+            "moved": moved,
+            "notFound": notFound,
+            "failed": failed
+        ] as [String: Any])
+    }
+
+    /// Create a mailbox (folder) in an account. Nested paths use "/".
+    /// Idempotent: an existing mailbox is reported with created=false.
+    static func createMailbox(account: String, name: String) {
+        let script = """
+        tell application "Mail"
+            try
+                set acct to account "\(escapeForAppleScript(account))"
+                get name of acct
+            on error
+                return "ERROR_ACCOUNT_NOT_FOUND"
+            end try
+            try
+                get name of mailbox "\(escapeForAppleScript(name))" of acct
+                return "EXISTS"
+            end try
+            tell acct to make new mailbox with properties {name:"\(escapeForAppleScript(name))"}
+            return "CREATED"
+        end tell
+        """
+
+        guard let raw = runAppleScript(script) else { return }
+        switch raw {
+        case "ERROR_ACCOUNT_NOT_FOUND":
+            JSONOutput.error("Account \"\(account)\" not found. Use mail.list_accounts for valid names.")
+        case "EXISTS", "CREATED":
+            JSONOutput.success(["account": account, "mailbox": name, "created": raw == "CREATED"] as [String: Any])
+        default:
+            JSONOutput.error("Unexpected response from Mail.app while creating mailbox")
+        }
+    }
+
     /// Save a specific attachment from a message to disk.
     static func saveAttachment(messageId: String, index: Int, outputDir: String, account: String?, mailbox: String?) {
         guard index >= 0 else {

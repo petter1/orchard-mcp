@@ -1,6 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { appendMailLocatorArgs, requireMailLocator } from "../mailSafety.js";
+import {
+  appendMailLocatorArgs,
+  MAIL_MOVE_MAX_IDS,
+  normalizeMailboxPath,
+  requireMailLocator,
+} from "../mailSafety.js";
 import { OPERATION_PROFILES, safeBridgeData } from "../safety.js";
 
 export function registerMailTools(server: McpServer): void {
@@ -267,6 +272,73 @@ export function registerMailTools(server: McpServer): void {
         args.push("--path", path);
       }
       const data = await safeBridgeData(args, OPERATION_PROFILES.mailWrite);
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
+    }
+  );
+
+  server.tool(
+    "mail.move",
+    `Move one or more messages to another mailbox (folder), optionally in another account. Requires the source account and mailbox from a recent mail.search, mail.unread_summary, or mail.flagged result. Up to ${MAIL_MOVE_MAX_IDS} message IDs per call. The message ID (RFC Message-ID) stays the same after the move; use it with the returned target account/mailbox. Reports moved, notFound, and failed IDs separately. The target mailbox must exist (see mail.create_mailbox). Requires Mail.app to be running.`,
+    {
+      messageIds: z
+        .array(z.string().min(1))
+        .min(1)
+        .max(MAIL_MOVE_MAX_IDS)
+        .describe(`Message IDs to move (from mail.search etc.), 1 to ${MAIL_MOVE_MAX_IDS}`),
+      account: z
+        .string()
+        .min(1)
+        .describe("Source mail account name from the search/list result"),
+      mailbox: z
+        .string()
+        .min(1)
+        .describe("Source mailbox name/path from the search/list result"),
+      targetMailbox: z
+        .string()
+        .min(1)
+        .describe('Target mailbox name/path, e.g. "Archive" or "Projects/2026"'),
+      targetAccount: z
+        .string()
+        .min(1)
+        .optional()
+        .describe("Target mail account name (default: the source account)"),
+    },
+    async ({ messageIds, account, mailbox, targetMailbox, targetAccount }) => {
+      const args = ["mail-move"];
+      for (const id of new Set(messageIds)) {
+        args.push("--id", id);
+      }
+      args.push("--account", account, "--mailbox", mailbox, "--target-mailbox", targetMailbox);
+      if (targetAccount) {
+        args.push("--target-account", targetAccount);
+      }
+      const data = await safeBridgeData(args, OPERATION_PROFILES.mailMove);
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
+    }
+  );
+
+  server.tool(
+    "mail.create_mailbox",
+    'Create a mailbox (folder) in a mail account. Use "/" for nested mailboxes, e.g. "Projects/2026". Idempotent: an existing mailbox is returned with created=false. Requires Mail.app to be running.',
+    {
+      account: z
+        .string()
+        .min(1)
+        .describe("Mail account name (from mail.list_accounts)"),
+      name: z
+        .string()
+        .describe('Mailbox name or path, e.g. "Receipts" or "Projects/2026"'),
+    },
+    async ({ account, name }) => {
+      const path = normalizeMailboxPath(name);
+      const data = await safeBridgeData(
+        ["mail-create-mailbox", "--account", account, "--name", path],
+        OPERATION_PROFILES.mailWrite
+      );
       return {
         content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
       };

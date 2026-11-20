@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **`mail_move`**: move 1–25 messages (by message ID) from a known source mailbox to another mailbox, optionally in another account. Source and target mailboxes are verified before anything moves; the result lists `moved` (with the new account/mailbox locator), `notFound`, and `failed` IDs. Message IDs stay valid after the move. New `mailMove` safety profile (60 s, mail lane).
+- **`mail_create_mailbox`**: create a mailbox in an account, nested paths with `/`. Path is validated before Mail.app is touched; existing mailboxes return `created: false`.
+
 ## [0.6.3] - 2026-05-27
 
 ### Fixed
