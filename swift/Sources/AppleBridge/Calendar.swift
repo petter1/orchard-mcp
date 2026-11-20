@@ -11,10 +11,13 @@ enum CalendarBridge {
 
     /// Request full calendar access. Returns true if granted.
     static func requestAccess() async -> Bool {
-        do {
-            return try await store.requestFullAccessToEvents()
-        } catch {
-            return false
+        PermissionGate.requireAnswer(service: "Calendar", await requestAccessAnswer())
+    }
+
+    /// The permission answer, or nil while the dialog is unanswered.
+    static func requestAccessAnswer() async -> Bool? {
+        await PermissionGate.request { done in
+            store.requestFullAccessToEvents { granted, _ in done(granted) }
         }
     }
 

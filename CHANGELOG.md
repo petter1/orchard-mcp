@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- **Unanswered permission dialogs hung Calendar, Reminders, Contacts, and `system_doctor`.** EventKit/Contacts requests wait for the user without a time limit; a dialog parked in Notification Center (or re-asked after an ad-hoc re-sign of `AppleBridge.app`) blocked each call until the caller's timeout with no hint. A shared `PermissionGate` now waits at most 8 s: tools return an error that says the dialog is waiting and how to reset it (`tccutil reset …`), and the doctor reports `status: "pending"` per service. The doctor's safety budget is raised to 45 s to fit the worst case.
+
 ## [0.6.3] - 2026-05-27
 
 ### Fixed
