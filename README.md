@@ -50,7 +50,7 @@ Calendars"), triggered automatically on first use or during setup.
 
 ## Status
 
-Current release: 65 tools across Calendar, Mail, Reminders, Files, System, Numbers,
+Current release: 66 tools across Calendar, Mail, Reminders, Files, System, Numbers,
 Pages, Keynote, Notes, and Contacts. See [CHANGELOG.md](CHANGELOG.md) for release
 history.
 
@@ -135,6 +135,7 @@ Tool names use underscores for Claude Desktop Chat compatibility.
 - `mail_search` - Search messages by subject, sender, body, or all fields with pagination
 - `mail_read_message` - Get message content by ID with configurable body truncation; pass account/mailbox locators when available
 - `mail_flagged` - List flagged messages across all accounts with pagination
+- `mail_list_messages` - List a whole mailbox newest first, with paging and an optional date window
 - `mail_create_draft` - Create a draft email in Mail.app for review
 - `mail_save_attachment` - Save an email attachment to disk by message ID, index, account, and mailbox
 
@@ -240,6 +241,7 @@ apple-bridge search
 apple-bridge mail-accounts
 apple-bridge mail-unread
 apple-bridge mail-search
+apple-bridge mail-list
 apple-bridge mail-message
 apple-bridge mail-flagged
 apple-bridge mail-create-draft
