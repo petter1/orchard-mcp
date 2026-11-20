@@ -66,15 +66,12 @@ enum CalendarBridge {
             return
         }
 
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-        guard let startDate = formatter.date(from: startISO) ?? parseFlexibleISO(startISO) else {
-            JSONOutput.error("Invalid start date: \(startISO). Use ISO 8601 format.")
+        guard let startDate = try? DateParsing.parseISO(startISO) else {
+            JSONOutput.error("\(DateParseError(input: startISO))")
             return
         }
-        guard let endDate = formatter.date(from: endISO) ?? parseFlexibleISO(endISO) else {
-            JSONOutput.error("Invalid end date: \(endISO). Use ISO 8601 format.")
+        guard let endDate = try? DateParsing.parseISO(endISO) else {
+            JSONOutput.error("\(DateParseError(input: endISO))")
             return
         }
         guard validateRange(start: startDate, end: endDate, tool: "calendar-list-events") else {
@@ -141,15 +138,12 @@ enum CalendarBridge {
             return
         }
 
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-        guard let startDate = formatter.date(from: startISO) ?? parseFlexibleISO(startISO) else {
-            JSONOutput.error("Invalid start date: \(startISO)")
+        guard let startDate = try? DateParsing.parseISO(startISO) else {
+            JSONOutput.error("\(DateParseError(input: startISO))")
             return
         }
-        guard let endDate = formatter.date(from: endISO) ?? parseFlexibleISO(endISO) else {
-            JSONOutput.error("Invalid end date: \(endISO)")
+        guard let endDate = try? DateParsing.parseISO(endISO) else {
+            JSONOutput.error("\(DateParseError(input: endISO))")
             return
         }
         guard validateRange(start: startDate, end: endDate, tool: "calendar-search-events") else {
@@ -182,13 +176,6 @@ enum CalendarBridge {
     }
 
     // MARK: - Helpers
-
-    private static func parseFlexibleISO(_ str: String) -> Date? {
-        // Reason: Accept date-only strings like "2026-02-17" without time component.
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withFullDate]
-        return formatter.date(from: str)
-    }
 
     private static func validateRange(start: Date, end: Date, tool: String) -> Bool {
         guard end >= start else {

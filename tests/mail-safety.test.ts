@@ -122,3 +122,13 @@ describe("mail.search locator", () => {
     assert.match(body, /name of account of msgMboxRef/);
   });
 });
+
+describe("mail.list_messages bridge contract", () => {
+  it("stays inside one mailbox and caps the page size", () => {
+    const body = swiftFunctionBody("listMessages");
+    assert.match(body, /every message of srcBox/);
+    assert.doesNotMatch(body, /every mailbox|every account/);
+    const cmd = readRepoFile("swift/Sources/AppleBridge/AppleBridge.swift");
+    assert.match(cmd, /limit: max\(1, min\(limit, 200\)\)/);
+  });
+});

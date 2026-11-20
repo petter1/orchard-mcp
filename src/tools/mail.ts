@@ -148,6 +148,53 @@ export function registerMailTools(server: McpServer): void {
   );
 
   server.tool(
+    "mail.list_messages",
+    "List all messages of one mailbox, newest first, with paging and an optional received-date window. Returns headers only (no body) plus total and hasMore. Use it to walk a whole mailbox; use mail.search to filter by text. Dates without an offset are local time (e.g. since 2026-11-01). Requires Mail.app to be running.",
+    {
+      account: z
+        .string()
+        .min(1)
+        .describe("Mail account name (from mail.list_accounts)"),
+      mailbox: z
+        .string()
+        .min(1)
+        .describe('Mailbox name/path, e.g. "INBOX" or "Archive"'),
+      since: z
+        .string()
+        .optional()
+        .describe("Only messages received at or after this ISO 8601 date/time"),
+      before: z
+        .string()
+        .optional()
+        .describe("Only messages received before this ISO 8601 date/time"),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(200)
+        .optional()
+        .describe("Max results to return (default: 50, max: 200)"),
+      offset: z
+        .number()
+        .int()
+        .min(0)
+        .optional()
+        .describe("Number of results to skip (default: 0)"),
+    },
+    async ({ account, mailbox, since, before, limit, offset }) => {
+      const args = ["mail-list", "--account", account, "--mailbox", mailbox];
+      if (since) args.push("--since", since);
+      if (before) args.push("--before", before);
+      if (limit) args.push("--limit", String(limit));
+      if (offset !== undefined) args.push("--offset", String(offset));
+      const data = await safeBridgeData(args, OPERATION_PROFILES.mailScan);
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
+    }
+  );
+
+  server.tool(
     "mail.read_message",
     "Get the full content of an email message by its message ID (from mail.search or mail.unread_summary). Pass account and mailbox from the search result when available so Mail.app can open the message without scanning every mailbox. Returns subject, sender, date, body, to, cc, and attachments (name, MIME type, index for use with mail.save_attachment).",
     {

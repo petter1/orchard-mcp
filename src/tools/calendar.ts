@@ -47,11 +47,11 @@ export function registerCalendarTools(server: McpServer): void {
 
   server.tool(
     "calendar.list_events",
-    "List calendar events in a date range. Recurring events are properly expanded. Optionally filter by calendar ID.",
+    "List calendar events in a date range. Recurring events are properly expanded. Dates without an offset are local time; returned times carry the local offset (e.g. +01:00). Optionally filter by calendar ID.",
     {
       start: z
         .string()
-        .describe("Start date in ISO 8601 format (e.g. 2026-02-17 or 2026-02-17T00:00:00Z)"),
+        .describe("Start in ISO 8601 (e.g. 2026-02-17 = local midnight, 2026-02-17T09:00 = local time, or with Z/offset)"),
       end: z
         .string()
         .describe("End date in ISO 8601 format"),

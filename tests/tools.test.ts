@@ -11,10 +11,11 @@ const EXPECTED_TOOLS = [
   "calendar_list_events",
   "calendar_today",
   "calendar_search",
-  // Mail (11)
+  // Mail (12)
   "mail_list_accounts",
   "mail_unread_summary",
   "mail_search",
+  "mail_list_messages",
   "mail_read_message",
   "mail_create_draft",
   "mail_flagged",
@@ -94,10 +95,10 @@ describe("tool registration", () => {
     server = createOrchardServer();
   });
 
-  it("registers exactly 69 tools", () => {
+  it("registers exactly 70 tools", () => {
     const tools = (server as any)._registeredTools as Record<string, unknown>;
     const names = Object.keys(tools);
-    assert.equal(names.length, 69, `Expected 69 tools, got ${names.length}: ${names.join(", ")}`);
+    assert.equal(names.length, 70, `Expected 70 tools, got ${names.length}: ${names.join(", ")}`);
   });
 
   it("uses Claude Desktop Chat-compatible tool names", () => {

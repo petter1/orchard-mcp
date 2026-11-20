@@ -41,6 +41,7 @@ struct AppleBridge: AsyncParsableCommand {
             MailAccounts.self,
             MailUnread.self,
             MailSearchCmd.self,
+            MailListMessages.self,
             MailMessage.self,
             MailFlagged.self,
             MailCreateDraft.self,
@@ -214,6 +215,48 @@ struct MailSearchCmd: AsyncParsableCommand {
 
     func run() async throws {
         MailBridge.search(query: query, account: account, mailbox: mailbox, limit: limit, searchIn: searchIn, offset: offset)
+    }
+}
+
+struct MailListMessages: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "mail-list",
+        abstract: "List messages of one mailbox with paging and a date window."
+    )
+
+    @Option(name: .long, help: "Mail account name")
+    var account: String
+
+    @Option(name: .long, help: "Mailbox name/path")
+    var mailbox: String
+
+    @Option(name: .long, help: "Only messages received at or after this ISO 8601 date/time")
+    var since: String?
+
+    @Option(name: .long, help: "Only messages received before this ISO 8601 date/time")
+    var before: String?
+
+    @Option(name: .long, help: "Max results (default: 50)")
+    var limit: Int = 50
+
+    @Option(name: .long, help: "Number of results to skip (default: 0)")
+    var offset: Int = 0
+
+    func run() async throws {
+        let sinceDate: Date?
+        let beforeDate: Date?
+        do {
+            sinceDate = try since.map(DateParsing.parseISO)
+            beforeDate = try before.map(DateParsing.parseISO)
+        } catch {
+            JSONOutput.error("\(error)")
+            return
+        }
+        MailBridge.listMessages(
+            account: account, mailbox: mailbox,
+            since: sinceDate, before: beforeDate,
+            limit: max(1, min(limit, 200)), offset: max(0, offset)
+        )
     }
 }
 
