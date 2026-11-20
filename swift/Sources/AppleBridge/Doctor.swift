@@ -15,28 +15,17 @@ enum DoctorBridge {
         ]
 
         // Calendar permissions
-        let calStatus = EKEventStore.authorizationStatus(for: .event)
-        let calStatusStr = authStatusName(calStatus)
-        report["calendar"] = [
-            "status": calStatusStr,
-            "granted": calStatus == .fullAccess
-        ]
-
-        // Reason: If not determined, attempt to request so the user gets prompted.
+        // Reason: requests go through PermissionGate so an unanswered dialog
+        // is reported as "pending" instead of hanging the doctor.
+        var calStatus = EKEventStore.authorizationStatus(for: .event)
         if calStatus == .notDetermined {
-            let granted = await CalendarBridge.requestAccess()
-            report["calendar"] = [
-                "status": granted ? "fullAccess" : "denied",
-                "granted": granted,
-                "note": "Permission was just requested."
-            ]
+            report["calendar"] = permissionReport(service: "Calendar", answer: await CalendarBridge.requestAccessAnswer(), grantedName: "fullAccess")
+            calStatus = EKEventStore.authorizationStatus(for: .event)
+        } else {
+            report["calendar"] = ["status": authStatusName(calStatus), "granted": calStatus == .fullAccess]
         }
-
-        // If we have calendar access, list calendar count and accounts
-        if calStatus == .fullAccess || calStatus == .notDetermined {
-            let store = EKEventStore()
-            _ = try? await store.requestFullAccessToEvents()
-            let calendars = store.calendars(for: .event)
+        if calStatus == .fullAccess {
+            let calendars = EKEventStore().calendars(for: .event)
             let accounts = Set(calendars.compactMap { $0.source?.title })
             report["calendarSummary"] = [
                 "count": calendars.count,
@@ -45,25 +34,15 @@ enum DoctorBridge {
         }
 
         // Reminders permissions
-        let remStatus = EKEventStore.authorizationStatus(for: .reminder)
-        report["reminders"] = [
-            "status": authStatusName(remStatus),
-            "granted": remStatus == .fullAccess
-        ]
-
+        var remStatus = EKEventStore.authorizationStatus(for: .reminder)
         if remStatus == .notDetermined {
-            let granted = await RemindersBridge.requestAccess()
-            report["reminders"] = [
-                "status": granted ? "fullAccess" : "denied",
-                "granted": granted,
-                "note": "Permission was just requested."
-            ]
+            report["reminders"] = permissionReport(service: "Reminders", answer: await RemindersBridge.requestAccessAnswer(), grantedName: "fullAccess")
+            remStatus = EKEventStore.authorizationStatus(for: .reminder)
+        } else {
+            report["reminders"] = ["status": authStatusName(remStatus), "granted": remStatus == .fullAccess]
         }
-
-        if remStatus == .fullAccess || remStatus == .notDetermined {
-            let store = EKEventStore()
-            _ = try? await store.requestFullAccessToReminders()
-            let lists = store.calendars(for: .reminder)
+        if remStatus == .fullAccess {
+            let lists = EKEventStore().calendars(for: .reminder)
             report["remindersSummary"] = [
                 "count": lists.count,
                 "lists": lists.map { $0.title }.sorted()
@@ -87,18 +66,12 @@ enum DoctorBridge {
         report["notes"] = checkNotesAccess()
 
         // Contacts -- native CNContactStore
-        let contactsStatus = CNContactStore.authorizationStatus(for: .contacts)
-        report["contacts"] = [
-            "status": contactsAuthName(contactsStatus),
-            "granted": contactsStatus == .authorized
-        ]
+        var contactsStatus = CNContactStore.authorizationStatus(for: .contacts)
         if contactsStatus == .notDetermined {
-            let granted = await ContactsBridge.requestAccess()
-            report["contacts"] = [
-                "status": granted ? "authorized" : "denied",
-                "granted": granted,
-                "note": "Permission was just requested."
-            ]
+            report["contacts"] = permissionReport(service: "Contacts", answer: await ContactsBridge.requestAccessAnswer(), grantedName: "authorized")
+            contactsStatus = CNContactStore.authorizationStatus(for: .contacts)
+        } else {
+            report["contacts"] = ["status": contactsAuthName(contactsStatus), "granted": contactsStatus == .authorized]
         }
 
         // Guidance
@@ -133,6 +106,17 @@ enum DoctorBridge {
         }
 
         JSONOutput.success(report)
+    }
+
+    private static func permissionReport(service: String, answer: Bool?, grantedName: String) -> [String: Any] {
+        guard let granted = answer else {
+            return ["status": "pending", "granted": false, "note": PermissionGate.pendingMessage(service: service)]
+        }
+        return [
+            "status": granted ? grantedName : "denied",
+            "granted": granted,
+            "note": "Permission was just requested."
+        ]
     }
 
     private static func authStatusName(_ status: EKAuthorizationStatus) -> String {

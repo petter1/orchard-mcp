@@ -6,10 +6,13 @@ enum ContactsBridge {
     private static let maxPhoneSubstringContactsScanned = 5_000
 
     static func requestAccess() async -> Bool {
-        await withCheckedContinuation { cont in
-            store.requestAccess(for: .contacts) { granted, _ in
-                cont.resume(returning: granted)
-            }
+        PermissionGate.requireAnswer(service: "Contacts", await requestAccessAnswer())
+    }
+
+    /// The permission answer, or nil while the dialog is unanswered.
+    static func requestAccessAnswer() async -> Bool? {
+        await PermissionGate.request { done in
+            store.requestAccess(for: .contacts) { granted, _ in done(granted) }
         }
     }
 

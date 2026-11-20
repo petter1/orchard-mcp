@@ -121,7 +121,9 @@ export const OPERATION_PROFILES = {
   systemDoctor: {
     name: "system.doctor",
     lane: "doctor",
-    timeoutMs: 20_000,
+    // Reason: up to three permission prompts (8 s each, PermissionGate) plus
+    // five 5 s app probes must fit; the doctor runs rarely.
+    timeoutMs: 45_000,
     queueTimeoutMs: 500,
     maxOutputBytes: DEFAULT_OUTPUT_BYTES,
   },
