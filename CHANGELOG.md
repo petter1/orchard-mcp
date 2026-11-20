@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- **IDs from `mail_search` without an account did not work in `mail_read_message`.** Searches in the unified inbox returned no account and a hard-coded `INBOX` mailbox, so the follow-up lookup searched a non-existent top-level mailbox. The search now reads account and mailbox from each message when they are not given, so every result carries a working locator.
+
 ## [0.6.3] - 2026-05-27
 
 ### Fixed
