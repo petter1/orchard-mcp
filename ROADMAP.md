@@ -60,7 +60,7 @@ Orchard im Fork verbessern, lokal nutzen und gute Änderungen als PR an `upstrea
 | `feat/calendar-compact-output` | `main` | #12 | ja |
 | `fork/local` | `main` | alles zusammen, für den lokalen Build: 74 Tools, 183/183 Tests | nein |
 
-Für Upstream-PRs vorher auf `upstream/main` rebasen und die Fork-Zeile in `AGENTS.md` sowie `ROADMAP.md` weglassen. Jeder Branch hat einen eigenen `## [Unreleased]`-Block im `CHANGELOG.md` und eigene Tool-Zahlen in README/AGENTS/CONTRIBUTING. Beim Zusammenführen gibt es dort einfache Konflikte.
+Upstream-Varianten ✅ 20.11.: Jeder Branch liegt zusätzlich als `pr/<branch>` direkt auf `upstream/main` (eigene Commits per Cherry-Pick, ohne `ROADMAP.md` und Fork-Zeile in `AGENTS.md`). Alle `pr/*` ohne Konflikte, Typecheck sauber, Tests grün (153 + neue Tests). `pr/feat/mail-list-messages`, `pr/feat/calendar-write` und `pr/feat/reminders-update` bauen auf `pr/fix/local-time-dates`. Nicht gepusht. Jeder Branch hat einen eigenen `## [Unreleased]`-Block im `CHANGELOG.md` und eigene Tool-Zahlen in README/AGENTS/CONTRIBUTING. Beim Zusammenführen gibt es dort einfache Konflikte.
 
 **Achtung Berechtigungen:** Jeder Neu-Build signiert `AppleBridge.app` ad hoc neu. macOS fragt dann Kalender, Reminders und Kontakte erneut ab, auch für die global installierte Version (gleiche Bundle-ID). Dialog bestätigen, sonst melden die Tools «permission dialog is waiting».
 
@@ -72,7 +72,7 @@ Für Upstream-PRs vorher auf `upstream/main` rebasen und die Fork-Zeile in `AGEN
 | 2a Mail | #1, #2 | ✅ 20.11.2026 (Branch, live nur ohne echte Verschiebung getestet) |
 | 2b Mail | #3, #4, #7 | ✅ 20.11.2026 (Branches) |
 | 3 Kalender & Reminders | #5, #6, #11, #12 | ✅ 20.11.2026 (Branches). #5 und #6 noch live testen, sobald der Kalender-/Reminders-Dialog bestätigt ist. |
-| 4 Abschluss | Tests, README, #9, Upstream-PRs, Version taggen | #9 ✅ 20.11. · offen: Live-Tests (Mail verschieben/markieren, Kalender, Reminders), Upstream-PRs, Version taggen · geplant Di 15.12.2026 |
+| 4 Abschluss | Tests, README, #9, Upstream-PRs, Version taggen | #9 ✅ 20.11. · PR-Branches `pr/*` vorbereitet ✅ 20.11. · offen: Live-Tests (Mail verschieben/markieren, Kalender, Reminders), Push + Upstream-PRs, Version taggen · geplant Di 15.12.2026 |
 | 5 Linux | siehe unten | noch nicht eingeplant, frühestens 2027 |
 
 Hinweis: Phase 1 muss vor den anderen laufen. Fällt sie später, verschieben sich die übrigen.
