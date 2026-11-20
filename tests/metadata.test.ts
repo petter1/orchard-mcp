@@ -43,6 +43,20 @@ describe("metadata stays in sync", () => {
     assert.match(doctor, new RegExp(`"version": "${packageJson.version}"`));
   });
 
+  it("declares a usage description for every TCC-gated framework the bridge uses", () => {
+    // Reason: without the key macOS denies access silently, with no dialog.
+    const plist = readRepoFile("swift/Sources/AppleBridge/Info.plist");
+    const required: Record<string, string> = {
+      "Calendar.swift": "NSCalendarsUsageDescription",
+      "Reminders.swift": "NSRemindersUsageDescription",
+      "Contacts.swift": "NSContactsUsageDescription",
+    };
+    for (const [source, key] of Object.entries(required)) {
+      assert.ok(existsSync(new URL(`swift/Sources/AppleBridge/${source}`, repoRoot)), source);
+      assert.match(plist, new RegExp(`<key>${key}</key>`), key);
+    }
+  });
+
   it("does not keep stale package snapshots in the repo", () => {
     assert.equal(
       existsSync(new URL("package/package.json", repoRoot)),
