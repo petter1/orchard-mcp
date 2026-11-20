@@ -57,6 +57,19 @@ describe("metadata stays in sync", () => {
     }
   });
 
+  it("declares the macOS 14 full-access keys for EventKit full-access requests", () => {
+    // Reason: requestFullAccessToEvents/Reminders expect the FullAccess keys on macOS 14+.
+    const plist = readRepoFile("swift/Sources/AppleBridge/Info.plist");
+    const pairs: Record<string, [RegExp, string]> = {
+      "Calendar.swift": [/requestFullAccessToEvents/, "NSCalendarsFullAccessUsageDescription"],
+      "Reminders.swift": [/requestFullAccessToReminders/, "NSRemindersFullAccessUsageDescription"],
+    };
+    for (const [source, [call, key]] of Object.entries(pairs)) {
+      if (!call.test(readRepoFile(`swift/Sources/AppleBridge/${source}`))) continue;
+      assert.match(plist, new RegExp(`<key>${key}</key>`), key);
+    }
+  });
+
   it("bounds every TCC permission request with PermissionGate", () => {
     // Reason: an unanswered dialog must not hang tools or the doctor (#13).
     for (const source of ["Calendar.swift", "Reminders.swift", "Contacts.swift"]) {
