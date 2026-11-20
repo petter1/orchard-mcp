@@ -123,6 +123,45 @@ export function registerReminderTools(server: McpServer): void {
   );
 
   server.tool(
+    "reminders.update_reminder",
+    "Change a reminder's title, due date, notes, priority, list, or completion. Only given fields change. A due date without time (2026-11-18) gives a day-only reminder; an empty string clears due date or notes. Uses EventKit, so it stays fast on large lists.",
+    {
+      id: z.string().min(1).describe("Reminder ID (from reminders.list_reminders output)"),
+      title: z.string().min(1).optional().describe("New title"),
+      dueDate: z
+        .string()
+        .optional()
+        .describe("ISO 8601 due date. Date only = no time; without offset = local time; empty string clears it."),
+      notes: z.string().optional().describe("Notes (empty string clears them)"),
+      priority: z
+        .number()
+        .int()
+        .min(0)
+        .max(9)
+        .optional()
+        .describe("0 = none, 1 = high, 5 = medium, 9 = low"),
+      list: z.string().min(1).optional().describe("Move to the reminder list with this name"),
+      completed: z.boolean().optional().describe("Mark completed (true) or open again (false)"),
+    },
+    async ({ id, title, dueDate, notes, priority, list, completed }) => {
+      const args = ["reminder-update", "--id", id];
+      if (title !== undefined) args.push("--title", title);
+      if (dueDate !== undefined) args.push("--due-date", dueDate);
+      if (notes !== undefined) args.push("--notes", notes);
+      if (priority !== undefined) args.push("--priority", String(priority));
+      if (list !== undefined) args.push("--list", list);
+      if (completed !== undefined) args.push("--completed", String(completed));
+      if (args.length === 3) {
+        throw new Error("reminders.update_reminder needs at least one field to change.");
+      }
+      const data = await safeBridgeData(args, OPERATION_PROFILES.remindersWrite);
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
+    }
+  );
+
+  server.tool(
     "reminders.complete_reminder",
     "Mark a reminder as completed.",
     {

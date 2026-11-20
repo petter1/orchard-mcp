@@ -21,7 +21,7 @@ orchard-mcp must protect the user's Mac first. A tool call is allowed to return 
 | Pages | Pages via AppleScript | Calls are serialized through the Pages lane and bounded by timeout/output budgets. Large writes/tables are capped by schema. |
 | Keynote | Keynote via AppleScript | PNG/JPEG export requires a slide index. All-slide image export is refused. Calls are serialized through the Keynote lane. |
 | Calendar | EventKit | `calendar.list_events` and `calendar.search` refuse ranges over 31 days; the native bridge also caps date ranges and result counts. `calendar.create_event`/`update_event`/`delete_event` touch one event per call, refuse read-only calendars, and refuse to change a recurring series implicitly (an occurrence start or `span: futureEvents` is required). |
-| Reminders | EventKit | List calls have bounded result limits in the schema and native bridge, and run through the Reminders lane. |
+| Reminders | EventKit | List calls have bounded result limits in the schema and native bridge, and run through the Reminders lane. `reminders.update_reminder` changes one reminder by ID via EventKit (no list scan). |
 | Contacts | Contacts.framework | Calls run through the Contacts lane and output budget. Phone substring fallback stops after a native scan budget. |
 | Files | FileManager, Spotlight, PDFKit, Vision, textutil | Calls run through the Files lane. `files.move` accepts at most 50 items per call. `mdfind`, `mdls`, and `textutil` use native subprocess timeouts. PDF, OCR, directory listing, and textutil extraction have native size/page/item budgets. |
 
