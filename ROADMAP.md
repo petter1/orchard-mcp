@@ -9,20 +9,27 @@ Diese Datei gilt nur für den Fork. Sie soll reichen, damit eine Session ohne Vo
 
 ## Ziel
 
-Orchard im Fork verbessern, lokal nutzen und gute Änderungen als PR an `upstream` anbieten. Später läuft Orchard auch auf Linux, mit icloud-mcp als Backend.
+Orchard im Fork verbessern und lokal nutzen (kein aktives Upstreaming, Entscheid 19.11.). Später läuft Orchard auch auf Linux, mit icloud-mcp als Backend.
 
 ## Entscheide
 
 | Datum | Entscheid |
 |---|---|
 | 13.11.2026 | Fork unter `petter1`. Gute Änderungen gehen als PR upstream. |
+| 18.11.2026 | Upstream-PRs und Diskussionen im Upstream-Repo macht nur Yanik, nie Claude (kein Overhead in upstream). |
 | 18.11.2026 | Die Linux-Lösung kommt in diesen Fork, nicht in ein eigenes Repo. |
 | 18.11.2026 | **icloud-mcp wird auf Linux als Backend eingebunden.** Orchard reicht dort Kalender-, Kontakt- und Mail-Aufrufe an einen icloud-mcp-Prozess weiter. icloud-mcp bleibt ein eigenes Projekt (Go) und bleibt nah am Upstream. Verworfen: den Go-Code nach TypeScript übernehmen, denn dann fielen die Upstream-Updates und Sicherheitsfixes weg. |
+| 19.11.2026 | **Kein aktives Upstreaming mehr.** Der Fork darf sich frei entwickeln, upstream kann sich bei Bedarf Commits holen. Upstream-Updates (v. a. Sicherheitsfixes) weiterhin geprüft nachziehen. |
+| 19.11.2026 | Roadmap ohne feste Termine, nur Reihenfolge. Sessions arbeiten den nächsten offenen Schritt ab. |
+| 20.11.2026 | Bei #10 und #11 gilt die Mac-Version (Ursache in Swift behoben, live geprüft). Die Cloud-Versionen sind unter `archive/cloud/…` archiviert, Fork-PRs #1 und #2 geschlossen. |
+| 20.11.2026 | GitHub immer aktuell halten: jeder fertige Branch und jede Roadmap-Änderung sofort nach `origin` pushen, damit andere Sessions (auch Cloud) keine Arbeit doppelt machen. |
 
 ## Arbeitsregeln für Sessions
 
 - Swift-Bridge bauen und testen geht nur auf macOS (`npm run build`, `npm test`). Auf Linux oder in einer Cloud-Session nur TypeScript bearbeiten, `npm run build:ts`, `npm run lint` und die TS-Tests, die ohne Bridge laufen.
-- Eine Änderung pro Branch. PRs für upstream auf Englisch und vom aktuellen `upstream/main` abzweigen. Diese `ROADMAP.md` nicht in Upstream-PRs mitnehmen.
+- Eine Änderung pro Branch, Commits auf Englisch. Keine Upstream-PRs durch Claude (Entscheide 18./19.11.). Die `pr/*`-Branches (auf `upstream/main`) liegen bereit, falls Yanik selbst PRs öffnen will.
+- **Vor neuer Arbeit:** `git fetch origin`, offene Fork-PRs und diese Roadmap auf `main` prüfen. Nach der Arbeit sofort pushen und die Roadmap auf `main` nachführen (nicht nur im Session-Branch).
+- Linux/Cloud: `npm ci --force --ignore-scripts` (wegen `"os": ["darwin"]` und dem Swift-Postinstall), danach laufen `npm run lint` und `npm test`. Der Test «SIGKILL reaches grandchildren» schlägt dort fehl (Prozessgruppen in der Sandbox), auch auf `main`. Swift-Code ohne Build am Mac nicht schreiben.
 - Nach jedem erledigten Schritt hier den Status nachführen (✅ + Datum).
 
 ## Lücken (gefunden im Alltag, 11.–18.11.2026)
@@ -36,21 +43,18 @@ Orchard im Fork verbessern, lokal nutzen und gute Änderungen als PR an `upstrea
 | 5 | Kalender nur lesend | `calendar_create_event` / `_update_event` / `_delete_event` (EventKit), bei Serien `span: thisEvent` | 3 · ✅ 20.11. Branch `feat/calendar-write` (Serien nur mit `occurrenceStart` oder `span: futureEvents`). **Noch nicht live getestet** (Kalenderzugriff wartete auf Dialog). |
 | 6 | Reminders nicht bearbeitbar (Datum, Notiz, Liste); AppleScript läuft bei grossen Listen (~600 Einträge) in Timeouts | `reminders_update_reminder` (EventKit) | 3 · ✅ 20.11. Branch `feat/reminders-update`. **Noch nicht live getestet.** |
 | 7 | Keine Flags/Gelesen-Status | `mail_set_flag`, `mail_mark_read` | 2 · ✅ 20.11. Branch `feat/mail-flag-read-status` |
-| 8 | **Bug:** Kontakte lassen sich nie freigeben, weil `swift/Sources/AppleBridge/Info.plist` `NSContactsUsageDescription` fehlt. macOS lehnt dann ohne Dialog ab. | Key ergänzen, Issue/PR upstream. (Lokal auf dem Mac gepatcht, geht bei `npm update` verloren.) | 1 · ✅ 20.11. Branch `fix/contacts-usage-description` |
+| 8 | **Bug:** Kontakte lassen sich nie freigeben, weil `swift/Sources/AppleBridge/Info.plist` `NSContactsUsageDescription` fehlt. macOS lehnt dann ohne Dialog ab. | Key ergänzen. (Lokal auf dem Mac gepatcht, geht bei `npm update` verloren.) | 1 · ✅ 20.11. Branch `fix/contacts-usage-description` |
 | 9 | Berechtigungsdialoge landen unbemerkt im Mitteilungszentrum und gelten dann als abgelehnt | Setup-Hinweis: Dialog sofort bestätigen, sonst `tccutil reset <Dienst> io.l22.apple-bridge` | 4 · ✅ 20.11. README-Abschnitt «Permission dialogs» + Fehlermeldung mit `tccutil`-Befehl (Branch `fix/permission-prompt-timeout`) |
 | 10 | **Bug:** `system_doctor` meldet Kalender/Reminders/Kontakte als «denied», obwohl die Tools funktionieren | Doctor wie die übrigen Befehle über `AppleBridge.app` ausführen | 1 · ✅ 20.11. Branch `fix/doctor-via-app-bundle` (auch `orchard-mcp setup`) |
 | 11 | **Bug:** `calendar_list_events` liefert bei Tagesfenstern falsche Tage (Abfrage für den 18.11. lieferte Einträge vom 17.11.) | Zeitzonen-/Bereichslogik prüfen, Test mit Tagesfenster in `Europe/Zurich` | 3 · ✅ 20.11. Branch `fix/local-time-dates`. Ursache: `ISO8601DateFormatter` rechnet in GMT, Ganztagestermin vom 18.11. kam als `…17T23:00:00Z`. Swift-Regressionstest. |
 | 12 | Grosse Antworten (Kalender 3 Wochen ≈ 120 KB) sprengen den Kontext | Kompaktes Ausgabeformat / Feldauswahl | 3 · ✅ 20.11. Branch `feat/calendar-compact-output` (`detail: "compact"`) |
 | 13 | Jeder Neu-Build signiert `AppleBridge.app` ad hoc neu. macOS fragt dann Kalender/Kontakte erneut ab. Der Doctor wartet bei `notDetermined` ohne Zeitlimit auf den Dialog (gesehen 20.11.: hängt > 2 min, MCP-Aufruf läuft nach 20 s in den Timeout). | Doctor soll nur Status melden und nicht selbst nachfragen (oder mit Zeitlimit). Stabile Signatur prüfen. | 4 · ✅ 20.11. Branch `fix/permission-prompt-timeout`: Zeitlimit 8 s für alle Berechtigungsanfragen, Doctor meldet `pending`. Offen: stabile Signatur. |
 
-## Doppelarbeit und offene Entscheide (Stand 20.11.2026)
+## Doppelarbeit 18.–20.11.2026 (erledigt)
 
-- **Cloud-Sessions 18./19.11.** haben im Fork schon #8, #9, #10, #11 und #12 bearbeitet: Fork-PR #1 (`claude/inspiring-cray-n2nrrt`) und #2 (`claude/nice-hamilton-yu3ghi`), dazu die Remote-Branches `fix/contacts-usage-description`, `fix/doctor-via-app-bundle`, `fix/calendar-local-day-window`, `docs/permission-dialog-hint`. Die Mac-Session vom 20.11. hat dieselben Punkte parallel gelöst (Tabelle unten), weil diese Arbeit nicht auf `main` lag.
-- Unterschiede: #11 löst die Cloud-Version in TypeScript (`src/calendarTime.ts`), die Mac-Version an der Ursache in Swift (Ortszeit in Ein- und Ausgabe, betrifft auch Reminders und Geburtstage, live geprüft). #10 löst die Cloud-Version mit Wiederholung über die App bei `denied` (`retryViaApp`), die Mac-Version ruft den Doctor gleich über die App auf (`preferApp`). **Entscheid offen:** welche Variante bleibt; die andere Fork-PR bzw. die anderen Branches schliessen.
-- Gleichnamige Branches: Auf GitHub gelten `fix/contacts-usage-description` und `fix/doctor-via-app-bundle` in der Cloud-Version. Die Mac-Versionen davon liegen als `pr/fix/…` (auf `upstream/main`) und in `fork/local`.
-- **Entscheid 18.11. (aus der Cloud-Roadmap):** Claude öffnet keine PRs, Issues oder Kommentare im Upstream-Repo; Upstream-PRs macht Yanik selbst. Am 20.11. hat Yanik dem Eröffnen der Upstream-PRs zugestimmt. Bis das geklärt ist, eröffnet Claude upstream nichts.
-- Upstream (l22-io) reviewt seit Juni 2026 keine PRs. Offene fremde PRs überschneiden sich: #13 `calendar.create_event` (UnicornaasTech, nur Anlegen) mit #5, #15 «inbox of account»-Fix (saren-ai) mit Mail-Code von #3.
-- **Arbeitsregel ab 20.11.:** Jeder fertige Branch und jede Roadmap-Änderung wird sofort nach `origin` gepusht. Vor neuer Arbeit `git fetch origin` und die offenen Fork-PRs prüfen.
+- Cloud-Sessions 18./19.11. und die Mac-Session 20.11. haben #8–#12 parallel gelöst, weil die Cloud-Arbeit nicht auf `main` lag. Entscheid 20.11.: Mac-Version bleibt. Cloud-Stände archiviert unter `archive/cloud/fix/contacts-usage-description`, `archive/cloud/fix/doctor-via-app-bundle`, `archive/cloud/fix/calendar-local-day-window`, `archive/cloud/docs/permission-dialog-hint`, `archive/cloud/claude/inspiring-cray-n2nrrt`, `archive/cloud/claude/nice-hamilton-yu3ghi`.
+- Hinweis aus der Cloud-Session (noch offen): Ab macOS 14 erwartet `requestFullAccessToEvents`/`…Reminders` die Keys `NSCalendarsFullAccessUsageDescription` und `NSRemindersFullAccessUsageDescription`. Die plist hat nur die alten Keys. Läuft bisher trotzdem; beobachten und bei Bedarf ergänzen.
+- Upstream (l22-io) reviewt seit Juni 2026 keine PRs. Fremde offene PRs überschneiden sich: #13 `calendar.create_event` (nur Anlegen) mit #5, #15 «inbox of account»-Fix mit Mail-Code von #3.
 
 ## Branches (Stand 20.11.2026, gepusht nach `origin`)
 
@@ -69,7 +73,7 @@ Orchard im Fork verbessern, lokal nutzen und gute Änderungen als PR an `upstrea
 | `feat/calendar-compact-output` | `main` | #12 | ja |
 | `fork/local` | `main` | alles zusammen, für den lokalen Build: 74 Tools, 183/183 Tests | nein |
 
-Upstream-Varianten ✅ 20.11.: Jeder Branch liegt zusätzlich als `pr/<branch>` direkt auf `upstream/main` (eigene Commits per Cherry-Pick, ohne `ROADMAP.md` und Fork-Zeile in `AGENTS.md`). Alle `pr/*` ohne Konflikte, Typecheck sauber, Tests grün (153 + neue Tests). `pr/feat/mail-list-messages`, `pr/feat/calendar-write` und `pr/feat/reminders-update` bauen auf `pr/fix/local-time-dates`. Nicht gepusht. Jeder Branch hat einen eigenen `## [Unreleased]`-Block im `CHANGELOG.md` und eigene Tool-Zahlen in README/AGENTS/CONTRIBUTING. Beim Zusammenführen gibt es dort einfache Konflikte.
+Upstream-Varianten ✅ 20.11.: Jeder Branch liegt zusätzlich als `pr/<branch>` direkt auf `upstream/main` (eigene Commits per Cherry-Pick, ohne `ROADMAP.md` und Fork-Zeile in `AGENTS.md`). Alle `pr/*` ohne Konflikte, Typecheck sauber, Tests grün (153 + neue Tests). `pr/feat/mail-list-messages`, `pr/feat/calendar-write` und `pr/feat/reminders-update` bauen auf `pr/fix/local-time-dates`. Gepusht, aber kein Upstream-PR durch Claude. Jeder Branch hat einen eigenen `## [Unreleased]`-Block im `CHANGELOG.md` und eigene Tool-Zahlen in README/AGENTS/CONTRIBUTING. Beim Zusammenführen gibt es dort einfache Konflikte.
 
 **Achtung Berechtigungen:** Jeder Neu-Build signiert `AppleBridge.app` ad hoc neu. macOS fragt dann Kalender, Reminders und Kontakte erneut ab, auch für die global installierte Version (gleiche Bundle-ID). Dialog bestätigen, sonst melden die Tools «permission dialog is waiting».
 
@@ -81,7 +85,7 @@ Upstream-Varianten ✅ 20.11.: Jeder Branch liegt zusätzlich als `pr/<branch>` 
 | 2a Mail | #1, #2 | ✅ 20.11.2026 (Branch, live nur ohne echte Verschiebung getestet) |
 | 2b Mail | #3, #4, #7 | ✅ 20.11.2026 (Branches) |
 | 3 Kalender & Reminders | #5, #6, #11, #12 | ✅ 20.11.2026 (Branches). #5 und #6 noch live testen, sobald der Kalender-/Reminders-Dialog bestätigt ist. |
-| 4 Abschluss | Tests, README, #9, Upstream-PRs, Version taggen | #9 ✅ 20.11. · PR-Branches `pr/*` vorbereitet ✅ 20.11. · offen: Live-Tests (Mail verschieben/markieren, Kalender, Reminders), Push + Upstream-PRs, Version taggen · geplant Di 15.12.2026 |
+| 4 Abschluss | Tests, README, #9, Version taggen | #9 ✅ 20.11. · alles gepusht ✅ 20.11. · offen: Live-Tests am Mac (Mail verschieben/markieren, Kalender #5, Reminders #6), Version taggen |
 | 5 Linux | siehe unten | noch nicht eingeplant, frühestens 2027 |
 
 Hinweis: Phase 1 muss vor den anderen laufen. Fällt sie später, verschieben sich die übrigen.
@@ -110,13 +114,13 @@ Plan:
    | `mail_search`, `mail_unread_summary`, `mail_flagged` | `search_messages` (mit Filtern) |
    | `mail_read_message` | `get_message` |
    | `mail_list_messages` | `search_messages` ohne Text, mit Zeitfenster (prüfen) bzw. `list_mailboxes` für die Ordner |
-   | `mail_move` | `move_message` (nur einzeln, Batch in Orchard als Schleife bis icloud-mcp #4) |
+   | `mail_move` | `move_message` (einzeln), `move_messages` (Batch, icloud-mcp-Branch `feat/move-messages-v1.2`) |
    | `mail_set_flag`, `mail_mark_read` | `set_message_flags` |
-   | `mail_create_mailbox` | fehlt auch in v1.2.0, kommt im icloud-mcp-Fork (#2) |
+   | `mail_create_mailbox` | `create_mailbox` (icloud-mcp-Branch `feat/create-mailbox-v1.2`, upstream fehlt es) |
    | `mail_create_draft`, `mail_save_attachment` | fehlt bzw. anders (`send_message` sendet direkt, nicht als Entwurf) |
 
 4. **Sicherheit:** Die App-Safety-Grenzen aus `src/safety.ts` (Zeit, Ausgabegrösse, breite Anfragen ablehnen) gelten auch für den Linux-Pfad. icloud-mcp standardmässig nur lesend starten (`ICLOUD_MCP_READ_ONLY=true`). Schreibrechte nur gezielt freigeben.
 5. **Paket:** `"os"` um `linux` erweitern. `postinstall.sh` überspringt auf Linux den Swift-Build. README-Abschnitt «Linux» ergänzen.
 6. **Tests:** Backend-Client mit einem Fake-MCP-Server testen. Diese Tests laufen ohne macOS und ohne iCloud.
 
-Ob Phase 5 upstream gehen soll, ist offen. Erst fragen, ob l22-io Linux-Support will. Sonst bleibt sie im Fork.
+Phase 5 bleibt im Fork (Entscheid 19.11.: kein aktives Upstreaming).
