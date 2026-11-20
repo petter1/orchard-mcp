@@ -12,6 +12,7 @@ import {
 } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
+import { callBridge } from "./bridge.js";
 
 const execFileAsync = promisify(execFile);
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -177,16 +178,7 @@ async function requestPermissions(
 ): Promise<void> {
   step(4, total, "Requesting permissions...");
 
-  // Helper: parse doctor output
-  async function getDoctor(): Promise<Record<string, any> | null> {
-    try {
-      const { stdout } = await run(bridgeBin, ["doctor"]);
-      const parsed = JSON.parse(stdout);
-      return parsed.data ?? null;
-    } catch {
-      return null;
-    }
-  }
+  const getDoctor = runDoctor;
 
   // Helper: run command via .app bundle, return parsed JSON or null
   async function runViaApp(
@@ -323,13 +315,21 @@ async function printClientConfig(total: number): Promise<void> {
   }
 }
 
+// Reason: Run the doctor through AppleBridge.app, the identity that holds the
+// TCC grants. The bare binary reports Calendar/Contacts as denied even after
+// the user granted access.
+async function runDoctor(): Promise<Record<string, any> | null> {
+  const result = await callBridge(["doctor"], { preferApp: true, timeoutMs: 30_000 });
+  if (result.status !== "ok") return null;
+  return (result.data as Record<string, any> | undefined) ?? null;
+}
+
 // Step 6: Validation
 async function validate(total: number): Promise<void> {
   step(6, total, "Validation");
   try {
-    const { stdout } = await run(bridgeBin, ["doctor"]);
-    const doctor = JSON.parse(stdout);
-    const d = doctor.data;
+    const d = await runDoctor();
+    if (!d) throw new Error("doctor returned no data");
 
     if (d?.calendarSummary) {
       log(

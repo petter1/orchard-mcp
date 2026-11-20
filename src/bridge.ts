@@ -70,6 +70,13 @@ export interface BridgeOptions {
    * or flood the MCP client.
    */
   maxOutputBytes?: number;
+  /**
+   * Run through the AppleBridge.app bundle from the start instead of only as
+   * an "access denied" fallback. Needed for commands that report TCC status
+   * without failing (system doctor): macOS grants permissions to the .app
+   * identity, so the bare binary would report them as missing.
+   */
+  preferApp?: boolean;
 }
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -88,6 +95,11 @@ export async function callBridge(
   const bin = getBridgePath();
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const maxOutputBytes = opts.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES;
+
+  if (opts.preferApp && (await appBundleUsable())) {
+    return callBridgeViaApp(args, timeoutMs, maxOutputBytes);
+  }
+
   const direct = await runBridgeProcess(bin, args, timeoutMs, maxOutputBytes);
 
   if (direct.status === "error" || direct.parsed == null) {
@@ -116,6 +128,21 @@ export async function callBridge(
   }
 
   return { status: "error", error: direct.spawnError ?? "apple-bridge returned no output" };
+}
+
+/**
+ * The .app bundle is usable when it exists and is not bypassed by a binary
+ * override: APPLE_BRIDGE_BIN alone must not silently fall back to the default
+ * bundle, so it only counts together with APPLE_BRIDGE_APP.
+ */
+async function appBundleUsable(): Promise<boolean> {
+  if (process.env.APPLE_BRIDGE_BIN && !process.env.APPLE_BRIDGE_APP) return false;
+  try {
+    await access(getAppBundlePath());
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 interface DirectResult {

@@ -6,6 +6,7 @@ export interface OperationProfile {
   timeoutMs: number;
   queueTimeoutMs: number;
   maxOutputBytes?: number;
+  preferApp?: boolean;
 }
 
 interface Waiter {
@@ -124,6 +125,9 @@ export const OPERATION_PROFILES = {
     timeoutMs: 20_000,
     queueTimeoutMs: 500,
     maxOutputBytes: DEFAULT_OUTPUT_BYTES,
+    // Reason: TCC grants belong to AppleBridge.app; the bare binary reports
+    // Calendar/Contacts as denied even when every tool works.
+    preferApp: true,
   },
 } satisfies Record<string, OperationProfile>;
 
@@ -134,6 +138,7 @@ export async function safeBridgeData(
   const options: BridgeOptions = {
     timeoutMs: profile.timeoutMs,
     maxOutputBytes: profile.maxOutputBytes,
+    preferApp: profile.preferApp,
   };
   return runWithOperationProfile(
     {
