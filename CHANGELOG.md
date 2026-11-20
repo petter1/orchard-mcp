@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- **Contacts access could never be granted.** `Info.plist` lacked `NSContactsUsageDescription`, so macOS denied Contacts without showing a dialog and all `contacts_*` tools failed. A metadata test now checks the usage description for every TCC-gated framework. Existing installs may need `tccutil reset AddressBook io.l22.apple-bridge` once before the dialog appears.
+
 ## [0.6.3] - 2026-05-27
 
 ### Fixed

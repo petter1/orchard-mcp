@@ -12,5 +12,7 @@
     <string>orchard-mcp needs access to your calendars to list events and search.</string>
     <key>NSRemindersUsageDescription</key>
     <string>orchard-mcp needs access to your reminders to list and filter them.</string>
+    <key>NSContactsUsageDescription</key>
+    <string>orchard-mcp needs access to your contacts to search and read them.</string>
 </dict>
 </plist>
