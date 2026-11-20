@@ -43,7 +43,16 @@ Orchard im Fork verbessern, lokal nutzen und gute Änderungen als PR an `upstrea
 | 12 | Grosse Antworten (Kalender 3 Wochen ≈ 120 KB) sprengen den Kontext | Kompaktes Ausgabeformat / Feldauswahl | 3 · ✅ 20.11. Branch `feat/calendar-compact-output` (`detail: "compact"`) |
 | 13 | Jeder Neu-Build signiert `AppleBridge.app` ad hoc neu. macOS fragt dann Kalender/Kontakte erneut ab. Der Doctor wartet bei `notDetermined` ohne Zeitlimit auf den Dialog (gesehen 20.11.: hängt > 2 min, MCP-Aufruf läuft nach 20 s in den Timeout). | Doctor soll nur Status melden und nicht selbst nachfragen (oder mit Zeitlimit). Stabile Signatur prüfen. | 4 · ✅ 20.11. Branch `fix/permission-prompt-timeout`: Zeitlimit 8 s für alle Berechtigungsanfragen, Doctor meldet `pending`. Offen: stabile Signatur. |
 
-## Branches (Stand 20.11.2026, alle lokal, nicht gepusht)
+## Doppelarbeit und offene Entscheide (Stand 20.11.2026)
+
+- **Cloud-Sessions 18./19.11.** haben im Fork schon #8, #9, #10, #11 und #12 bearbeitet: Fork-PR #1 (`claude/inspiring-cray-n2nrrt`) und #2 (`claude/nice-hamilton-yu3ghi`), dazu die Remote-Branches `fix/contacts-usage-description`, `fix/doctor-via-app-bundle`, `fix/calendar-local-day-window`, `docs/permission-dialog-hint`. Die Mac-Session vom 20.11. hat dieselben Punkte parallel gelöst (Tabelle unten), weil diese Arbeit nicht auf `main` lag.
+- Unterschiede: #11 löst die Cloud-Version in TypeScript (`src/calendarTime.ts`), die Mac-Version an der Ursache in Swift (Ortszeit in Ein- und Ausgabe, betrifft auch Reminders und Geburtstage, live geprüft). #10 löst die Cloud-Version mit Wiederholung über die App bei `denied` (`retryViaApp`), die Mac-Version ruft den Doctor gleich über die App auf (`preferApp`). **Entscheid offen:** welche Variante bleibt; die andere Fork-PR bzw. die anderen Branches schliessen.
+- Gleichnamige Branches: Auf GitHub gelten `fix/contacts-usage-description` und `fix/doctor-via-app-bundle` in der Cloud-Version. Die Mac-Versionen davon liegen als `pr/fix/…` (auf `upstream/main`) und in `fork/local`.
+- **Entscheid 18.11. (aus der Cloud-Roadmap):** Claude öffnet keine PRs, Issues oder Kommentare im Upstream-Repo; Upstream-PRs macht Yanik selbst. Am 20.11. hat Yanik dem Eröffnen der Upstream-PRs zugestimmt. Bis das geklärt ist, eröffnet Claude upstream nichts.
+- Upstream (l22-io) reviewt seit Juni 2026 keine PRs. Offene fremde PRs überschneiden sich: #13 `calendar.create_event` (UnicornaasTech, nur Anlegen) mit #5, #15 «inbox of account»-Fix (saren-ai) mit Mail-Code von #3.
+- **Arbeitsregel ab 20.11.:** Jeder fertige Branch und jede Roadmap-Änderung wird sofort nach `origin` gepusht. Vor neuer Arbeit `git fetch origin` und die offenen Fork-PRs prüfen.
+
+## Branches (Stand 20.11.2026, gepusht nach `origin`)
 
 | Branch | Basis | Inhalt | Upstream-PR |
 |---|---|---|---|
