@@ -19,12 +19,13 @@ const EXPECTED_TOOLS = [
   "mail_create_draft",
   "mail_flagged",
   "mail_save_attachment",
-  // Reminders (8)
+  // Reminders (9)
   "reminders_list_lists",
   "reminders_list_reminders",
   "reminders_today",
   "reminders_create_list",
   "reminders_create_reminder",
+  "reminders_update_reminder",
   "reminders_complete_reminder",
   "reminders_delete_reminder",
   "reminders_delete_list",
@@ -90,10 +91,10 @@ describe("tool registration", () => {
     server = createOrchardServer();
   });
 
-  it("registers exactly 65 tools", () => {
+  it("registers exactly 66 tools", () => {
     const tools = (server as any)._registeredTools as Record<string, unknown>;
     const names = Object.keys(tools);
-    assert.equal(names.length, 65, `Expected 65 tools, got ${names.length}: ${names.join(", ")}`);
+    assert.equal(names.length, 66, `Expected 66 tools, got ${names.length}: ${names.join(", ")}`);
   });
 
   it("uses Claude Desktop Chat-compatible tool names", () => {
