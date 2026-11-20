@@ -87,7 +87,7 @@ Upstream-Varianten ✅ 20.11.: Jeder Branch liegt zusätzlich als `pr/<branch>` 
 | 2b Mail | #3, #4, #7 | ✅ 20.11.2026 (Branches) |
 | 3 Kalender & Reminders | #5, #6, #11, #12 | ✅ 20.11.2026 (Branches). #5 und #6 noch live testen, sobald der Kalender-/Reminders-Dialog bestätigt ist. |
 | 4 Abschluss | Tests, README, #9, Version taggen | #9 ✅ 20.11. · alles gepusht ✅ 20.11. · offen: Live-Tests am Mac (Mail verschieben/markieren, Kalender #5, Reminders #6), Version taggen |
-| 5 Linux | siehe unten | noch nicht eingeplant, frühestens 2027 |
+| 5 Linux | siehe unten | Schritte 1–6 ✅ 20.11.2026 (Branch `feat/linux-icloud-backend`, in `main`). Offen: Test auf einem echten Linux-Rechner gegen iCloud. |
 
 Hinweis: Phase 1 muss vor den anderen laufen. Fällt sie später, verschieben sich die übrigen.
 
@@ -96,6 +96,8 @@ Hinweis: Phase 1 muss vor den anderen laufen. Fällt sie später, verschieben si
 Voraussetzung: icloud-mcp Phase 1 (eigener Build aus dem Fork, Lesen gegen iCloud getestet).
 
 Heute ist Orchard nur für macOS gebaut: `package.json` hat `"os": ["darwin"]`, `scripts/postinstall.sh` baut die Swift-Bridge, und `src/server.ts` registriert alle Tool-Module.
+
+Stand 20.11.2026: Schritte 1–6 umgesetzt (`src/icloud/`, 21 Tools, 208/208 Tests). Geprüft auf dem Mac mit erzwungener Linux-Weiche, Fake-Backend und einem Smoke-Test gegen das echte icloud-mcp-Binary mit lokalen Tools (`icloud_capabilities`, `validate_event`; kein Netz, keine echten Zugangsdaten). Dabei gefunden und behoben: Nach einem Protokollfehler blieb der Kindprozess verwaist. **Offen:** auf Linux mit echten Zugangsdaten testen (Lesen zuerst, dann Schreiben mit Wegwerf-Kalender/-Ordner); Abweichungen zu macOS stehen im README-Abschnitt «Linux».
 
 Plan:
 1. **Plattformweiche** in `src/server.ts`: Auf `darwin` bleibt alles wie heute. Auf `linux` werden nur Kalender, Kontakte und Mail registriert. Notes, Reminders, Files, Numbers, Pages und Keynote gibt es auf Linux nicht.
