@@ -86,23 +86,24 @@ Heute ist Orchard nur für macOS gebaut: `package.json` hat `"os": ["darwin"]`, 
 Plan:
 1. **Plattformweiche** in `src/server.ts`: Auf `darwin` bleibt alles wie heute. Auf `linux` werden nur Kalender, Kontakte und Mail registriert. Notes, Reminders, Files, Numbers, Pages und Keynote gibt es auf Linux nicht.
 2. **Backend-Client:** Orchard startet icloud-mcp als Kindprozess (stdio) und ruft es als MCP-Client auf (`@modelcontextprotocol/sdk` Client + `StdioClientTransport`). Pfad zum Binary per Umgebungsvariable (z. B. `ICLOUD_MCP_BIN`). Zugangsdaten bleiben in der Konfiguration von icloud-mcp (`~/.config/icloud-mcp/`, Dateien mit Rechten 600). Orchard liest sie nie.
-3. **Tool-Abbildung:** Die Orchard-Namen bleiben, damit Clients auf Mac und Linux dieselben Tools sehen. Erste Zuordnung (gegen den aktuellen icloud-mcp-Stand prüfen):
+3. **Tool-Abbildung:** Die Orchard-Namen bleiben, damit Clients auf Mac und Linux dieselben Tools sehen. Zuordnung, geprüft gegen icloud-mcp v1.2.0 am 20.11.2026:
 
    | Orchard | icloud-mcp |
    |---|---|
    | `calendar_list_calendars` | `list_calendars` |
    | `calendar_list_events`, `calendar_today` | `search_events` (Zeitfenster) |
    | `calendar_search` | `search_events` |
-   | `calendar_create_event` / `_update_event` / `_delete_event` (Phase 3) | `create_event` / `update_event` / `delete_event` |
+   | `calendar_create_event` / `_update_event` / `_delete_event` | `create_event` / `update_event` / `delete_event` (Serien-Semantik abgleichen: Orchard `occurrenceStart` + `span`) |
    | `contacts_search` | `search_contacts` |
    | `contacts_read_contact` | `get_contact` |
    | `contacts_list_groups` | `list_address_books` (nur annähernd) |
    | `mail_list_accounts` | `icloud_capabilities` / Konfiguration (nur iCloud-Konto) |
    | `mail_search`, `mail_unread_summary`, `mail_flagged` | `search_messages` (mit Filtern) |
    | `mail_read_message` | `get_message` |
-   | `mail_move` (Phase 2) | `move_message` |
-   | `mail_set_flag`, `mail_mark_read` (Phase 2) | `set_message_flags` |
-   | `mail_create_mailbox` (Phase 2) | fehlt noch, kommt im icloud-mcp-Fork |
+   | `mail_list_messages` | `search_messages` ohne Text, mit Zeitfenster (prüfen) bzw. `list_mailboxes` für die Ordner |
+   | `mail_move` | `move_message` (nur einzeln, Batch in Orchard als Schleife bis icloud-mcp #4) |
+   | `mail_set_flag`, `mail_mark_read` | `set_message_flags` |
+   | `mail_create_mailbox` | fehlt auch in v1.2.0, kommt im icloud-mcp-Fork (#2) |
    | `mail_create_draft`, `mail_save_attachment` | fehlt bzw. anders (`send_message` sendet direkt, nicht als Entwurf) |
 
 4. **Sicherheit:** Die App-Safety-Grenzen aus `src/safety.ts` (Zeit, Ausgabegrösse, breite Anfragen ablehnen) gelten auch für den Linux-Pfad. icloud-mcp standardmässig nur lesend starten (`ICLOUD_MCP_READ_ONLY=true`). Schreibrechte nur gezielt freigeben.
