@@ -29,26 +29,39 @@ Orchard im Fork verbessern, lokal nutzen und gute Änderungen als PR an `upstrea
 
 | # | Problem | Verbesserung | Phase |
 |---|---|---|---|
-| 1 | Mails lassen sich nicht verschieben (nur per AppleScript) | `mail_move` (einzeln + Batch, Zielordner pro Konto), gibt neue ID/Message-ID zurück (#14) | 2 |
-| 2 | Mail-Ordner lassen sich nicht anlegen | `mail_create_mailbox` | 2 |
+| 1 | Mails lassen sich nicht verschieben (nur per AppleScript) | `mail_move` (einzeln + Batch, Zielordner pro Konto), gibt neue ID/Message-ID zurück (#14) | 2 · ✅ 20.11. Branch `feat/mail-move-create-mailbox` (Message-ID bleibt gleich, Rückgabe mit neuem Konto/Ordner) |
+| 2 | Mail-Ordner lassen sich nicht anlegen | `mail_create_mailbox` | 2 · ✅ 20.11. Branch `feat/mail-move-create-mailbox` |
 | 3 | IDs aus `mail_search`/`mail_unread_summary` funktionieren nicht in `mail_read_message` | ID durchgängig konsistent (Mail.app-`id`) | 2 |
 | 4 | Ein Postfach lässt sich nicht ganz auflisten (nur Suche mit Query) | `mail_list_messages` mit Paging + Datumsfilter | 2 |
 | 5 | Kalender nur lesend | `calendar_create_event` / `_update_event` / `_delete_event` (EventKit), bei Serien `span: thisEvent` | 3 |
 | 6 | Reminders nicht bearbeitbar (Datum, Notiz, Liste); AppleScript läuft bei grossen Listen (~600 Einträge) in Timeouts | `reminders_update_reminder` (EventKit) | 3 |
-| 7 | Keine Flags/Gelesen-Status | `mail_set_flag`, `mail_mark_read` | 2 |
-| 8 | **Bug:** Kontakte lassen sich nie freigeben, weil `swift/Sources/AppleBridge/Info.plist` `NSContactsUsageDescription` fehlt. macOS lehnt dann ohne Dialog ab. | Key ergänzen, Issue/PR upstream. (Lokal auf dem Mac gepatcht, geht bei `npm update` verloren.) | 1 |
+| 7 | Keine Flags/Gelesen-Status | `mail_set_flag`, `mail_mark_read` | 2 · ✅ 20.11. Branch `feat/mail-flag-read-status` |
+| 8 | **Bug:** Kontakte lassen sich nie freigeben, weil `swift/Sources/AppleBridge/Info.plist` `NSContactsUsageDescription` fehlt. macOS lehnt dann ohne Dialog ab. | Key ergänzen, Issue/PR upstream. (Lokal auf dem Mac gepatcht, geht bei `npm update` verloren.) | 1 · ✅ 20.11. Branch `fix/contacts-usage-description` |
 | 9 | Berechtigungsdialoge landen unbemerkt im Mitteilungszentrum und gelten dann als abgelehnt | Setup-Hinweis: Dialog sofort bestätigen, sonst `tccutil reset <Dienst> io.l22.apple-bridge` | 4 |
-| 10 | **Bug:** `system_doctor` meldet Kalender/Reminders/Kontakte als «denied», obwohl die Tools funktionieren | Doctor wie die übrigen Befehle über `AppleBridge.app` ausführen | 1 |
+| 10 | **Bug:** `system_doctor` meldet Kalender/Reminders/Kontakte als «denied», obwohl die Tools funktionieren | Doctor wie die übrigen Befehle über `AppleBridge.app` ausführen | 1 · ✅ 20.11. Branch `fix/doctor-via-app-bundle` (auch `orchard-mcp setup`) |
 | 11 | **Bug:** `calendar_list_events` liefert bei Tagesfenstern falsche Tage (Abfrage für den 18.11. lieferte Einträge vom 17.11.) | Zeitzonen-/Bereichslogik prüfen, Test mit Tagesfenster in `Europe/Zurich` | 3 |
 | 12 | Grosse Antworten (Kalender 3 Wochen ≈ 120 KB) sprengen den Kontext | Kompaktes Ausgabeformat / Feldauswahl | 3 |
+| 13 | Jeder Neu-Build signiert `AppleBridge.app` ad hoc neu. macOS fragt dann Kalender/Kontakte erneut ab. Der Doctor wartet bei `notDetermined` ohne Zeitlimit auf den Dialog (gesehen 20.11.: hängt > 2 min, MCP-Aufruf läuft nach 20 s in den Timeout). | Doctor soll nur Status melden und nicht selbst nachfragen (oder mit Zeitlimit). Stabile Signatur prüfen. | 4 |
+
+## Branches (Stand 20.11.2026, alle lokal, nicht gepusht)
+
+| Branch | Inhalt | Upstream-PR |
+|---|---|---|
+| `fix/doctor-via-app-bundle` | #10 | ja, geeignet |
+| `fix/contacts-usage-description` | #8 | ja, geeignet |
+| `feat/mail-move-create-mailbox` | #1, #2 | ja, nach Live-Test mit echter Mail |
+| `feat/mail-flag-read-status` | #7 | ja, nach Live-Test mit echter Mail |
+| `fork/local` | `main` + alle vier zusammen, für den lokalen Build (168/168 Tests grün, 69 Tools) | nein |
+
+Die vier Feature-Branches zweigen von `main` ab. Für Upstream-PRs vorher auf `upstream/main` rebasen und `ROADMAP.md`/`AGENTS.md`-Fork-Zeile weglassen. Alle vier tragen einen eigenen `## [Unreleased]`-Block im `CHANGELOG.md`, beim Zusammenführen gibt es dort einen einfachen Konflikt.
 
 ## Phasen
 
 | Phase | Inhalt | Status |
 |---|---|---|
-| 1 Setup | Fork ✅ 13.11. · auf dem Mac klonen, `npm install && npm run build && npm test`, Claude-Config (Code + Desktop) auf den lokalen Build umstellen · Bugs #8 und #10 | geplant So 29.11.2026 |
-| 2a Mail | #1, #2 | geplant Di 24.11.2026 |
-| 2b Mail | #3, #4, #7 | geplant Di 01.12.2026 |
+| 1 Setup | Fork ✅ 13.11. · Build + Tests auf dem Mac ✅ 20.11. (153/153) · Bugs #8 und #10 ✅ 20.11. (Branches, nicht gepusht) · offen: Claude-Config (Code + Desktop) auf den lokalen Build umstellen (heute: globale npm-Installation) | grösstenteils erledigt 20.11.2026 |
+| 2a Mail | #1, #2 | ✅ 20.11.2026 (Branch, live nur ohne echte Verschiebung getestet) |
+| 2b Mail | #3, #4, #7 | #7 ✅ 20.11.2026 (Branch) · #3, #4 offen, geplant Di 01.12.2026 |
 | 3 Kalender & Reminders | #5, #6, #11, #12 | geplant Di 08.12.2026 |
 | 4 Abschluss | Tests, README, #9, Upstream-PRs, Version taggen | geplant Di 15.12.2026 |
 | 5 Linux | siehe unten | noch nicht eingeplant, frühestens 2027 |
