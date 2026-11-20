@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- **`reminders_update_reminder`** (EventKit): change title, due date, notes, priority, list, or completion of one reminder. Avoids the AppleScript route that timed out on large lists. A date-only due date creates a day-only reminder (also for `reminders_create_reminder`), which is returned as `dueDate: "yyyy-MM-dd"` with `dueAllDay: true`.
+
 ### Fixed
 - **Calendar day windows returned the wrong day.** `ISO8601DateFormatter` defaults to GMT: a local all-day event on the 18th was returned as `2026-11-17T23:00:00Z`, and a date-only query `2026-11-18` started at UTC midnight (01:00 in Europe/Zurich). All bridge timestamps now carry the local offset (e.g. `2026-11-18T00:00:00+01:00`), and one shared parser reads date-only and offset-less input as local time (calendar events/search, reminder due dates). Contact birthdays are returned as a plain day (`yyyy-MM-dd`) instead of a shifted timestamp. New Swift regression test (`tests/swift-dates.test.ts`, skipped without `swiftc`).
 

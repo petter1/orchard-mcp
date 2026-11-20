@@ -51,6 +51,7 @@ struct AppleBridge: AsyncParsableCommand {
             ReminderCreateList.self,
             ReminderCreate.self,
             ReminderComplete.self,
+            ReminderUpdate.self,
             ReminderDelete.self,
             ReminderDeleteList.self,
             FileList.self,
@@ -393,6 +394,46 @@ struct ReminderCreate: AsyncParsableCommand {
 
     func run() async throws {
         await RemindersBridge.createReminder(listName: list, title: title, dueDate: due, priority: priority, notes: notes)
+    }
+}
+
+struct ReminderUpdate: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "reminder-update",
+        abstract: "Change title, due date, notes, priority, list, or completion of a reminder."
+    )
+
+    @Option(name: .long, help: "Reminder ID")
+    var id: String
+
+    @Option(name: .long, help: "New title")
+    var title: String?
+
+    @Option(name: .long, help: "Due date (ISO 8601; date only = no time; empty clears)")
+    var dueDate: String?
+
+    @Option(name: .long, help: "Notes (empty clears)")
+    var notes: String?
+
+    @Option(name: .long, help: "Priority 0-9 (0 = none, 1 = high, 5 = medium, 9 = low)")
+    var priority: Int?
+
+    @Option(name: .long, help: "Move to the reminder list with this name")
+    var list: String?
+
+    @Option(name: .long, help: "Completed (true/false)")
+    var completed: Bool?
+
+    func validate() throws {
+        if title == nil && dueDate == nil && notes == nil && priority == nil && list == nil && completed == nil {
+            throw ValidationError("Pass at least one field to change.")
+        }
+    }
+
+    func run() async throws {
+        await RemindersBridge.updateReminder(id: id, changes: .init(
+            title: title, dueDate: dueDate, notes: notes, priority: priority, listName: list, completed: completed
+        ))
     }
 }
 

@@ -211,14 +211,11 @@ enum RemindersBridge {
         }
 
         if let dueDateStr = dueDate {
-            guard let due = try? DateParsing.parseISO(dueDateStr) else {
+            guard let components = dueComponents(dueDateStr) else {
                 JSONOutput.error("\(DateParseError(input: dueDateStr))")
                 return
             }
-            reminder.dueDateComponents = Calendar.current.dateComponents(
-                [.year, .month, .day, .hour, .minute, .second],
-                from: due
-            )
+            reminder.dueDateComponents = components
         }
 
         do {
@@ -226,6 +223,77 @@ enum RemindersBridge {
             JSONOutput.success(formatReminder(reminder))
         } catch {
             JSONOutput.error("Failed to create reminder: \(error.localizedDescription)")
+        }
+    }
+
+    struct ReminderChanges {
+        var title: String?
+        var dueDate: String?
+        var notes: String?
+        var priority: Int?
+        var listName: String?
+        var completed: Bool?
+    }
+
+    /// Change fields of one reminder. Empty dueDate/notes clear the value.
+    static func updateReminder(id: String, changes: ReminderChanges) async {
+        guard await requestAccess() else {
+            JSONOutput.error("Reminders access denied. Grant access in System Settings > Privacy & Security > Reminders.")
+            return
+        }
+        guard let reminder = store.calendarItem(withIdentifier: id) as? EKReminder else {
+            JSONOutput.error("Reminder not found with id: \(id)")
+            return
+        }
+        if let title = changes.title {
+            guard !title.trimmingCharacters(in: .whitespaces).isEmpty else {
+                JSONOutput.error("Title must not be empty.")
+                return
+            }
+            reminder.title = title
+        }
+        if let due = changes.dueDate {
+            if due.isEmpty {
+                reminder.dueDateComponents = nil
+                // Reason: an alarm tied to a removed due date would fire for nothing.
+                reminder.alarms = nil
+            } else {
+                guard let components = dueComponents(due) else {
+                    JSONOutput.error("\(DateParseError(input: due))")
+                    return
+                }
+                reminder.dueDateComponents = components
+            }
+        }
+        if let notes = changes.notes { reminder.notes = notes.isEmpty ? nil : notes }
+        if let priority = changes.priority {
+            guard (0...9).contains(priority) else {
+                JSONOutput.error("Priority must be 0 (none) to 9.")
+                return
+            }
+            reminder.priority = priority
+        }
+        if let listName = changes.listName {
+            let matches = store.calendars(for: .reminder).filter {
+                $0.title.localizedCaseInsensitiveCompare(listName) == .orderedSame
+            }
+            guard let list = matches.first else {
+                JSONOutput.error("Reminder list not found: \(listName)")
+                return
+            }
+            guard list.allowsContentModifications else {
+                JSONOutput.error("Reminder list \"\(list.title)\" is read-only.")
+                return
+            }
+            reminder.calendar = list
+        }
+        if let completed = changes.completed { reminder.isCompleted = completed }
+
+        do {
+            try store.save(reminder, commit: true)
+            JSONOutput.success(formatReminder(reminder))
+        } catch {
+            JSONOutput.error("Failed to update reminder: \(error.localizedDescription)")
         }
     }
 
@@ -315,6 +383,18 @@ enum RemindersBridge {
 
     // MARK: - Helpers
 
+    /// Due date components: a date alone gives a day without time (as the
+    /// Reminders app does), anything else a local date and time.
+    private static func dueComponents(_ input: String) -> DateComponents? {
+        guard let date = try? DateParsing.parseISO(input) else { return nil }
+        let isDateOnly = input.trimmingCharacters(in: .whitespaces).range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil
+        let units: Set<Calendar.Component> = isDateOnly ? [.year, .month, .day] : [.year, .month, .day, .hour, .minute, .second]
+        var components = Calendar.current.dateComponents(units, from: date)
+        components.calendar = Calendar.current
+        components.timeZone = isDateOnly ? nil : TimeZone.current
+        return components
+    }
+
     private static func formatReminder(_ rem: EKReminder) -> [String: Any] {
         var dict: [String: Any] = [
             "id": rem.calendarItemIdentifier,
@@ -324,7 +404,12 @@ enum RemindersBridge {
             "priority": rem.priority
         ]
         if let dc = rem.dueDateComponents, let due = Calendar.current.date(from: dc) {
-            dict["dueDate"] = iso8601(due)
+            if dc.hour == nil {
+                dict["dueDate"] = isoDay(due)
+                dict["dueAllDay"] = true
+            } else {
+                dict["dueDate"] = iso8601(due)
+            }
         }
         if rem.isCompleted, let completed = rem.completionDate {
             dict["completionDate"] = iso8601(completed)

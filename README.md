@@ -50,7 +50,7 @@ Calendars"), triggered automatically on first use or during setup.
 
 ## Status
 
-Current release: 65 tools across Calendar, Mail, Reminders, Files, System, Numbers,
+Current release: 66 tools across Calendar, Mail, Reminders, Files, System, Numbers,
 Pages, Keynote, Notes, and Contacts. See [CHANGELOG.md](CHANGELOG.md) for release
 history.
 
@@ -145,6 +145,7 @@ Tool names use underscores for Claude Desktop Chat compatibility.
 - `reminders_today` - Incomplete reminders due today plus overdue reminders
 - `reminders_create_list` - Create a new reminder list
 - `reminders_create_reminder` - Create a reminder with optional due date, priority, notes
+- `reminders_update_reminder` - Change title, due date, notes, priority, list, or completion of a reminder
 - `reminders_complete_reminder` - Mark a reminder as completed
 - `reminders_delete_reminder` - Delete a reminder
 - `reminders_delete_list` - Delete a reminder list
@@ -249,6 +250,7 @@ apple-bridge reminders
 apple-bridge reminders-today
 apple-bridge reminder-create-list
 apple-bridge reminder-create
+apple-bridge reminder-update
 apple-bridge reminder-complete
 apple-bridge reminder-delete
 apple-bridge reminder-delete-list
