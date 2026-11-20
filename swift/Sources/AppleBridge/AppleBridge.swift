@@ -47,6 +47,7 @@ struct AppleBridge: AsyncParsableCommand {
             MailSaveAttachment.self,
             MailMove.self,
             MailCreateMailbox.self,
+            MailSetStatus.self,
             ReminderLists.self,
             RemindersCmd.self,
             RemindersToday.self,
@@ -364,6 +365,37 @@ struct MailCreateMailbox: AsyncParsableCommand {
 
     func run() async throws {
         MailBridge.createMailbox(account: account, name: name)
+    }
+}
+
+struct MailSetStatus: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "mail-set-status",
+        abstract: "Set read and/or flagged status on messages by message ID."
+    )
+
+    @Option(name: .long, help: "Message ID (repeat for a batch)")
+    var id: [String]
+
+    @Option(name: .long, help: "Mail account name from the search/list result")
+    var account: String
+
+    @Option(name: .long, help: "Mailbox name/path from the search/list result")
+    var mailbox: String
+
+    @Option(name: .long, help: "Set read status (true/false)")
+    var read: Bool?
+
+    @Option(name: .long, help: "Set flagged status (true/false)")
+    var flagged: Bool?
+
+    func validate() throws {
+        guard !id.isEmpty else { throw ValidationError("At least one --id is required.") }
+        guard read != nil || flagged != nil else { throw ValidationError("Pass --read and/or --flagged.") }
+    }
+
+    func run() async throws {
+        MailBridge.setStatus(messageIds: id, account: account, mailbox: mailbox, read: read, flagged: flagged)
     }
 }
 

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   appendMailLocatorArgs,
-  MAIL_MOVE_MAX_IDS,
+  MAIL_BATCH_MAX_IDS,
   normalizeMailboxPath,
   requireMailLocator,
 } from "../src/mailSafety.js";
@@ -90,7 +90,7 @@ describe("mail.create_mailbox path validation", () => {
 
 describe("mail.move bridge contract", () => {
   it("keeps the batch bounded", () => {
-    assert.equal(MAIL_MOVE_MAX_IDS, 25);
+    assert.equal(MAIL_BATCH_MAX_IDS, 25);
   });
 
   it("looks messages up only in the given source mailbox and checks both mailboxes first", () => {
@@ -99,5 +99,18 @@ describe("mail.move bridge contract", () => {
     assert.doesNotMatch(body, /every mailbox/);
     assert.ok(body.indexOf("ERROR_TARGET_NOT_FOUND") < body.indexOf("move targetMsg"));
     assert.ok(body.indexOf("ERROR_SOURCE_NOT_FOUND") < body.indexOf("move targetMsg"));
+  });
+});
+
+describe("mail status bridge contract", () => {
+  it("keeps the batch bounded", () => {
+    assert.equal(MAIL_BATCH_MAX_IDS, 25);
+  });
+
+  it("looks messages up only in the given mailbox", () => {
+    const body = swiftFunctionBody("setStatus");
+    assert.match(body, /whose message id is theId/);
+    assert.doesNotMatch(body, /every mailbox/);
+    assert.match(body, /ERROR_SOURCE_NOT_FOUND/);
   });
 });

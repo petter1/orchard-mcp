@@ -2,11 +2,46 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   appendMailLocatorArgs,
-  MAIL_MOVE_MAX_IDS,
+  MAIL_BATCH_MAX_IDS,
   normalizeMailboxPath,
   requireMailLocator,
 } from "../mailSafety.js";
 import { OPERATION_PROFILES, safeBridgeData } from "../safety.js";
+
+const batchLocatorSchema = {
+  messageIds: z
+    .array(z.string().min(1))
+    .min(1)
+    .max(MAIL_BATCH_MAX_IDS)
+    .describe(`Message IDs (from mail.search etc.), 1 to ${MAIL_BATCH_MAX_IDS}`),
+  account: z
+    .string()
+    .min(1)
+    .describe("Mail account name from the search/list result"),
+  mailbox: z
+    .string()
+    .min(1)
+    .describe("Mailbox name/path from the search/list result"),
+};
+
+async function setMailStatus(
+  messageIds: string[],
+  account: string,
+  mailbox: string,
+  status: { read?: boolean; flagged?: boolean }
+) {
+  const args = ["mail-set-status"];
+  for (const id of new Set(messageIds)) {
+    args.push("--id", id);
+  }
+  args.push("--account", account, "--mailbox", mailbox);
+  if (status.read !== undefined) args.push("--read", String(status.read));
+  if (status.flagged !== undefined) args.push("--flagged", String(status.flagged));
+  const data = await safeBridgeData(args, OPERATION_PROFILES.mailStatus);
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
+  };
+}
 
 export function registerMailTools(server: McpServer): void {
   server.tool(
@@ -280,13 +315,13 @@ export function registerMailTools(server: McpServer): void {
 
   server.tool(
     "mail.move",
-    `Move one or more messages to another mailbox (folder), optionally in another account. Requires the source account and mailbox from a recent mail.search, mail.unread_summary, or mail.flagged result. Up to ${MAIL_MOVE_MAX_IDS} message IDs per call. The message ID (RFC Message-ID) stays the same after the move; use it with the returned target account/mailbox. Reports moved, notFound, and failed IDs separately. The target mailbox must exist (see mail.create_mailbox). Requires Mail.app to be running.`,
+    `Move one or more messages to another mailbox (folder), optionally in another account. Requires the source account and mailbox from a recent mail.search, mail.unread_summary, or mail.flagged result. Up to ${MAIL_BATCH_MAX_IDS} message IDs per call. The message ID (RFC Message-ID) stays the same after the move; use it with the returned target account/mailbox. Reports moved, notFound, and failed IDs separately. The target mailbox must exist (see mail.create_mailbox). Requires Mail.app to be running.`,
     {
       messageIds: z
         .array(z.string().min(1))
         .min(1)
-        .max(MAIL_MOVE_MAX_IDS)
-        .describe(`Message IDs to move (from mail.search etc.), 1 to ${MAIL_MOVE_MAX_IDS}`),
+        .max(MAIL_BATCH_MAX_IDS)
+        .describe(`Message IDs to move (from mail.search etc.), 1 to ${MAIL_BATCH_MAX_IDS}`),
       account: z
         .string()
         .min(1)
@@ -343,5 +378,26 @@ export function registerMailTools(server: McpServer): void {
         content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
       };
     }
+  );
+  server.tool(
+    "mail.set_flag",
+    `Flag or unflag messages. Requires account and mailbox from a recent mail.search, mail.unread_summary, or mail.flagged result. Up to ${MAIL_BATCH_MAX_IDS} message IDs per call; reports updated, notFound, and failed IDs. Requires Mail.app to be running.`,
+    {
+      ...batchLocatorSchema,
+      flagged: z.boolean().describe("true to flag, false to remove the flag"),
+    },
+    async ({ messageIds, account, mailbox, flagged }) =>
+      setMailStatus(messageIds, account, mailbox, { flagged })
+  );
+
+  server.tool(
+    "mail.mark_read",
+    `Mark messages as read or unread. Requires account and mailbox from a recent mail.search, mail.unread_summary, or mail.flagged result. Up to ${MAIL_BATCH_MAX_IDS} message IDs per call; reports updated, notFound, and failed IDs. Requires Mail.app to be running.`,
+    {
+      ...batchLocatorSchema,
+      read: z.boolean().describe("true to mark as read, false to mark as unread"),
+    },
+    async ({ messageIds, account, mailbox, read }) =>
+      setMailStatus(messageIds, account, mailbox, { read })
   );
 }

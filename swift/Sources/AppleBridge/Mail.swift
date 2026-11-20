@@ -674,6 +674,82 @@ enum MailBridge {
         }
     }
 
+    /// Set read and/or flagged status on messages (by RFC Message-ID) in one mailbox.
+    static func setStatus(messageIds: [String], account: String, mailbox: String, read: Bool?, flagged: Bool?) {
+        let idList = messageIds.map { "\"\(escapeForAppleScript($0))\"" }.joined(separator: ", ")
+        var updates = ""
+        if let read = read { updates += "                        set read status of targetMsg to \(read)\n" }
+        if let flagged = flagged { updates += "                        set flagged status of targetMsg to \(flagged)\n" }
+        let script = """
+        tell application "Mail"
+            try
+                set srcBox to mailbox "\(escapeForAppleScript(mailbox))" of account "\(escapeForAppleScript(account))"
+                get name of srcBox
+            on error
+                return "ERROR_SOURCE_NOT_FOUND"
+            end try
+            set resultList to {}
+            repeat with idRef in {\(idList)}
+                set theId to contents of idRef
+                set targetMsg to missing value
+                try
+                    set targetMsg to first message of srcBox whose message id is theId
+                end try
+                if targetMsg is missing value then
+                    set end of resultList to "notfound:::" & theId
+                else
+                    try
+        \(updates)                set end of resultList to "updated:::" & theId
+                    on error errMsg
+                        set end of resultList to "failed:::" & theId & ":::" & errMsg
+                    end try
+                end if
+            end repeat
+            return my joinList(resultList, "^^^")
+        end tell
+
+        on joinList(theList, delim)
+            set oldDelim to AppleScript's text item delimiters
+            set AppleScript's text item delimiters to delim
+            set theResult to theList as string
+            set AppleScript's text item delimiters to oldDelim
+            return theResult
+        end joinList
+        """
+
+        guard let raw = runAppleScript(script) else { return }
+        if raw == "ERROR_SOURCE_NOT_FOUND" {
+            JSONOutput.error("Mailbox \"\(mailbox)\" not found in account \"\(account)\".")
+            return
+        }
+
+        var updated: [String] = []
+        var notFound: [String] = []
+        var failed: [[String: Any]] = []
+        for entry in raw.components(separatedBy: "^^^") where !entry.isEmpty {
+            let fields = entry.components(separatedBy: ":::")
+            guard fields.count >= 2 else { continue }
+            switch fields[0] {
+            case "updated": updated.append(fields[1])
+            case "notfound": notFound.append(fields[1])
+            default:
+                failed.append(["id": fields[1], "error": fields.count > 2 ? fields[2...].joined(separator: ":::") : "unknown error"])
+            }
+        }
+
+        var applied: [String: Any] = [:]
+        if let read = read { applied["read"] = read }
+        if let flagged = flagged { applied["flagged"] = flagged }
+        JSONOutput.success([
+            "account": account,
+            "mailbox": mailbox,
+            "applied": applied,
+            "updated": updated,
+            "notFound": notFound,
+            "failed": failed
+        ] as [String: Any])
+    }
+
     /// Save a specific attachment from a message to disk.
     static func saveAttachment(messageId: String, index: Int, outputDir: String, account: String?, mailbox: String?) {
         guard index >= 0 else {
