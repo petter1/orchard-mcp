@@ -37,6 +37,7 @@ AppleScript/JXA starts.
 Examples:
 
 - `mail_save_attachment` requires `account` and `mailbox` from a recent Mail result.
+- `mail_move` requires the source `account` and `mailbox` and moves at most 25 messages per call.
 - Notes body/all search is refused; use title search, then `notes_read_note`.
 - `numbers_read` and `numbers_get_formulas` require a cell range.
 - PNG/JPEG Keynote export requires a single slide index.
@@ -50,7 +51,7 @@ Calendars"), triggered automatically on first use or during setup.
 
 ## Status
 
-Current release: 65 tools across Calendar, Mail, Reminders, Files, System, Numbers,
+Current release: 67 tools across Calendar, Mail, Reminders, Files, System, Numbers,
 Pages, Keynote, Notes, and Contacts. See [CHANGELOG.md](CHANGELOG.md) for release
 history.
 
@@ -137,6 +138,8 @@ Tool names use underscores for Claude Desktop Chat compatibility.
 - `mail_flagged` - List flagged messages across all accounts with pagination
 - `mail_create_draft` - Create a draft email in Mail.app for review
 - `mail_save_attachment` - Save an email attachment to disk by message ID, index, account, and mailbox
+- `mail_move` - Move up to 25 messages to another mailbox (optionally another account); message IDs stay valid
+- `mail_create_mailbox` - Create a mailbox (folder), nested paths with `/`; idempotent
 
 ### Reminders
 
@@ -244,6 +247,8 @@ apple-bridge mail-message
 apple-bridge mail-flagged
 apple-bridge mail-create-draft
 apple-bridge mail-save-attachment
+apple-bridge mail-move
+apple-bridge mail-create-mailbox
 apple-bridge reminder-lists
 apple-bridge reminders
 apple-bridge reminders-today

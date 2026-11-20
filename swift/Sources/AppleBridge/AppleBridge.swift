@@ -45,6 +45,8 @@ struct AppleBridge: AsyncParsableCommand {
             MailFlagged.self,
             MailCreateDraft.self,
             MailSaveAttachment.self,
+            MailMove.self,
+            MailCreateMailbox.self,
             ReminderLists.self,
             RemindersCmd.self,
             RemindersToday.self,
@@ -309,6 +311,59 @@ struct MailSaveAttachment: AsyncParsableCommand {
 
     func run() async throws {
         MailBridge.saveAttachment(messageId: id, index: index, outputDir: path, account: account, mailbox: mailbox)
+    }
+}
+
+struct MailMove: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "mail-move",
+        abstract: "Move messages by message ID to another mailbox."
+    )
+
+    @Option(name: .long, help: "Message ID (repeat for a batch)")
+    var id: [String]
+
+    @Option(name: .long, help: "Source mail account name")
+    var account: String
+
+    @Option(name: .long, help: "Source mailbox name/path")
+    var mailbox: String
+
+    @Option(name: .long, help: "Target mail account name (default: source account)")
+    var targetAccount: String?
+
+    @Option(name: .long, help: "Target mailbox name/path")
+    var targetMailbox: String
+
+    func validate() throws {
+        guard !id.isEmpty else { throw ValidationError("At least one --id is required.") }
+    }
+
+    func run() async throws {
+        MailBridge.moveMessages(
+            messageIds: id,
+            account: account,
+            mailbox: mailbox,
+            targetAccount: targetAccount ?? account,
+            targetMailbox: targetMailbox
+        )
+    }
+}
+
+struct MailCreateMailbox: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "mail-create-mailbox",
+        abstract: "Create a mailbox (folder) in a mail account."
+    )
+
+    @Option(name: .long, help: "Mail account name")
+    var account: String
+
+    @Option(name: .long, help: "Mailbox name; use '/' for nested mailboxes")
+    var name: String
+
+    func run() async throws {
+        MailBridge.createMailbox(account: account, name: name)
     }
 }
 

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+- **`mail_move`**: move 1–25 messages (by message ID) from a known source mailbox to another mailbox, optionally in another account. Source and target mailboxes are verified before anything moves; the result lists `moved` (with the new account/mailbox locator), `notFound`, and `failed` IDs. Message IDs stay valid after the move. New `mailMove` safety profile (60 s, mail lane).
+- **`mail_create_mailbox`**: create a mailbox in an account, nested paths with `/`. Path is validated before Mail.app is touched; existing mailboxes return `created: false`.
+
 ### Fixed
 - **`system_doctor` reported Calendar/Contacts as denied although the tools worked.** macOS attaches TCC grants to the `AppleBridge.app` identity, but the doctor ran the bare binary and returned success, so the "access denied" fallback to the app bundle never triggered. The doctor now runs through the app bundle (new `preferApp` bridge option, set on the `systemDoctor` safety profile; skipped when `APPLE_BRIDGE_BIN` is overridden without `APPLE_BRIDGE_APP`). `orchard-mcp setup` uses the same path for its permission checks and validation.
 - **Contacts access could never be granted.** `Info.plist` lacked `NSContactsUsageDescription`, so macOS denied Contacts without showing a dialog and all `contacts_*` tools failed. A metadata test now checks the usage description for every TCC-gated framework. Existing installs may need `tccutil reset AddressBook io.l22.apple-bridge` once before the dialog appears.
